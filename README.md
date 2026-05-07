@@ -26,9 +26,11 @@ CPU: Intel(R) Core(TM) i7-10870H CPU @ 2.20GHz 2.21 GHz RAM: 16 GB GPU: RTX 3060
 -- manual.pdf       : User/Admin manual
 - .gitignore	
 - README.md
+
 ## **Developer's notes**  
   
 Work In Progress
 
 ## **Developers:**  
+
 - Alessandro Diana
