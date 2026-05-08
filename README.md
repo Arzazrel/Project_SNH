@@ -9,7 +9,18 @@ Project for the system and network hacking exam of the AIDE master's degree at t
 CPU: Intel(R) Core(TM) i7-10870H CPU @ 2.20GHz 2.21 GHz RAM: 16 GB GPU: RTX 3060 6GB laptop
 
 ## **Enviroments Settings**
+Project developed on the Kali Linux VM used during the course. The environment used had these software and these versions.
 
+- apache2
+Server version: Apache/2.4.58 (Debian)
+                                                                                                                                                                                                                                            
+- mysql
+mysql  Ver 15.1 Distrib 10.11.4-MariaDB, for debian-linux-gnu (x86_64) using  EditLine wrapper
+                                                                                                                                                                                                                                            
+- php              
+PHP 8.2.10 (cli)
+Zend Engine v4.2.10, Copyright (c) Zend Technologies with Zend OPcache v8.2.10, Copyright (c), by Zend Technologies
+                                                                              
 
 ## **The folder contains:**  
   
@@ -26,6 +37,19 @@ CPU: Intel(R) Core(TM) i7-10870H CPU @ 2.20GHz 2.21 GHz RAM: 16 GB GPU: RTX 3060
 -- manual.pdf       : User/Admin manual
 - .gitignore	
 - README.md
+
+## **DB setup**
+
+The application uses **MariaDB** (MySQL) for persistence management.
+
+- initialization: starting the database daemon on Kali.
+```bash
+sudo systemctl start mariadb
+```
+- Structure Creation: Import the provided schema into the database/ folder. This command will create the music_wave_DB database and populate the tables with test users:
+```bash
+sudo mariadb -u root < code/database/schema.sql
+```
 
 ## **Developer's notes**  
   
