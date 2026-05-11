@@ -13,12 +13,13 @@ class SecurityUtils {
      * Prevents Null Byte Injection attacks.
      */
     public static function sanitizeInput($data) {
+    	// check if the input is an array
         if (is_array($data)) {
-            return array_map([self::class, 'sanitizeInput'], $data);
+            return array_map([self::class, 'sanitizeInput'], $data);	// (e.g., a form with checkboxes or multiple fields) apply the function recursively to each element of the array.
         }
-        // Remove Null Byte (0x00)
-        $data = str_replace(chr(0), '', $data);
-        return trim($data);
+        
+        $data = str_replace(chr(0), '', $data);		// Remove Null Byte (0x00)
+        return trim($data);				// Removes blank spaces, tabs, or line breaks at the beginning and end of the string.
     }
 
     /**
