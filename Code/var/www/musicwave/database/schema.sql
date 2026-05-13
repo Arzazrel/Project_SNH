@@ -44,13 +44,13 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 
 -- Entering test users (Passwords: 'admin', 'user', 'prem_user')
 -- Hashes are generated with BCRYPT (PASSWORD_DEFAULT in PHP)
---INSERT INTO users (username, password_hash, email, role) VALUES 
---('admin', '$2y$10$mC7p0pAnW9.Y9oK6N.hSre1a9Gv.D2v.H6qP4qP4qP4qP4qP4qP4q', 'admin@musicwave.it', 'admin'),
---('user', '$2y$10$mC7p0pAnW9.Y9oK6N.hSre1a9Gv.D2v.H6qP4qP4qP4qP4qP4qP4q', 'user@musicwave.it', 'standard'),
---('prem_user', '$2y$10$mC7p0pAnW9.Y9oK6N.hSre1a9Gv.D2v.H6qP4qP4qP4qP4qP4qP4q', 'premium@musicwave.it', 'premium');
+INSERT INTO users (username, password_hash, email, role) VALUES 
+('admin', '$2y$10$mC7p0pAnW9.Y9oK6N.hSre1a9Gv.D2v.H6qP4qP4qP4qP4qP4qP4q', 'admin@musicwave.it', 'admin'),
+('user', '$2y$10$mC7p0pAnW9.Y9oK6N.hSre1a9Gv.D2v.H6qP4qP4qP4qP4qP4qP4q', 'user@musicwave.it', 'standard'),
+('prem_user', '$2y$10$mC7p0pAnW9.Y9oK6N.hSre1a9Gv.D2v.H6qP4qP4qP4qP4qP4qP4q', 'premium@musicwave.it', 'premium');
 
 -- Create a dedicated user with limited privileges
 -- In a real scenario, change 'StrongPassword123!' to a secure secret
---CREATE USER IF NOT EXISTS 'musicwave_user'@'localhost' IDENTIFIED BY 'StrongPassword123!';
+CREATE USER IF NOT EXISTS 'musicwave_user'@'localhost' IDENTIFIED BY 'StrongPassword123!';
 -- Grant DML (Data Manipulation Language) permissions only
---GRANT SELECT, INSERT, UPDATE, DELETE ON music_wave_DB.* TO 'musicwave_user'@'localhost';
+GRANT SELECT, INSERT, UPDATE, DELETE ON music_wave_DB.* TO 'musicwave_user'@'localhost';

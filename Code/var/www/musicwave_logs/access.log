@@ -1,0 +1,3 @@
+[2026-05-13T14:50:15.513314+00:00] activity.INFO: New user registered {"email":"test@test.com","username":"testUser"} {"url":"/register.php","ip":"127.0.0.1","http_method":"POST","server":"localhost","referrer":"http://localhost/register.php"}
+[2026-05-13T15:00:14.126438+00:00] activity.INFO: User logged in successfully {"user_id":4,"email":"test@test.com"} {"url":"/login.php","ip":"127.0.0.1","http_method":"POST","server":"localhost","referrer":"http://localhost/login.php"}
+[2026-05-13T18:38:02.814058+00:00] activity.INFO: User logged in successfully {"user_id":4,"email":"test@test.com"} {"url":"/login.php","ip":"127.0.0.1","http_method":"POST","server":"localhost","referrer":"http://localhost/login.php"}

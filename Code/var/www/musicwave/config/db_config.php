@@ -8,7 +8,7 @@
 define("DIR_BASE", realpath(__DIR__ . '/../') . '/');
 
 // Private Folders (Not accessible via URL)
-define("DIR_UTIL", DIR_BASE . 'util/');		// 
+define("DIR_INCLUDES", DIR_BASE . 'includes/');	// utilities and other common code 
 define("DIR_CONFIG", DIR_BASE . 'config/');	// Configuration files
 define("DIR_DATABASE", DIR_BASE . 'database/'); // SQL script, initialization and backup (schema.sql)
 define("DIR_VENDOR", DIR_BASE . 'vendor/');	// Monolog folder

@@ -16,12 +16,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     // Sanitize and Validate Inputs
     $email = SecurityUtils::validateEmail($_POST['email'] ?? '');	// if is not valid return false
+    $username = trim($_POST['username'] ?? ''); 			// clean
     $password = $_POST['password'] ?? '';
     $confirm_password = $_POST['confirm_password'] ?? '';
 
     // Check Requirements
     if (!$email) {
         $message = "Please provide a valid email address.";		// invalid email
+        $error = true;
+    } elseif (empty($username) || strlen($username) < 3) {
+        $message = "Username must be at least 3 characters long.";	// username too small
         $error = true;
     } elseif (strlen($password) < 8) {
         $message = "Password must be at least 8 characters long.";	// psw too small
@@ -31,28 +35,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = true;
     } else {
         // input are ok -> check if user already exists
-        $stmt = $conn->prepare("SELECT id FROM users WHERE username = ?");	// prepared query to search 
-        $stmt->bind_param("s", $email);
+        $stmt = $conn->prepare("SELECT id FROM users WHERE email = ? OR username = ?");	// prepared query to search 
+        $stmt->bind_param("ss", $email, $username);
         $stmt->execute();				
         // check if already exist the user
         if ($stmt->get_result()->num_rows > 0) {
-            $message = "Email already registered.";
+            $message = "Email or Username already taken.";
             $error = true;
-            $securityLogger->warning("Registration attempt with existing email", ["email" => $email]);
+            $securityLogger->warning("Registration attempt with existing email", ["email" => $email, "username" => $username]);
         } else {
             // hash the password using BCRYPT (NEVER store passwords in plain text or using MD5/SHA1)
             $hashed_password = password_hash($password, PASSWORD_BCRYPT);
 
             // insert new user
-            $stmt = $conn->prepare("INSERT INTO users (username, password_hash) VALUES (?, ?)");
-            $stmt->bind_param("ss", $email, $hashed_password);
+            $stmt = $conn->prepare("INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)");
+            $stmt->bind_param("sss", $username, $email, $hashed_password);
 		
 	    // check success for register operation
             if ($stmt->execute()) {
                 $message = "Registration successful! You can now login.";
-                $accessLogger->info("New user registered", ["username" => $email]);			// write logs
+                $accessLogger->info("New user registered", ["email" => $email, "username" => $username]);	// write logs
             } else {
-                $errorLogger->error("Failed to insert user into DB", ["error" => $conn->error]);	// write log
+                $errorLogger->error("Failed to insert user into DB", ["error" => $conn->error]);		// write log
                 $message = "A technical error occurred.";
                 $error = true;
             }
@@ -78,8 +82,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <form method="POST" action="register.php">
         <div>
+            <label>Username (Visible to others):</label><br>
+            <input type="text" name="username" value="<?php echo htmlspecialchars($_POST['username'] ?? ''); ?>" required>
+        </div>
+        <br>
+        <div>
             <label>Email Address:</label><br>
-            <input type="email" name="email" required>
+            <input type="email" name="email" value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>" required>
         </div>
         <br>
         <div>
