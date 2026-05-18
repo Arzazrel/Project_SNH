@@ -45,9 +45,9 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 -- Entering test users (Passwords: 'admin', 'user', 'prem_user')
 -- Hashes are generated with BCRYPT (PASSWORD_DEFAULT in PHP)
 INSERT INTO users (username, password_hash, email, role) VALUES 
-('admin', '$2y$10$mC7p0pAnW9.Y9oK6N.hSre1a9Gv.D2v.H6qP4qP4qP4qP4qP4qP4q', 'admin@musicwave.it', 'admin'),
-('user', '$2y$10$mC7p0pAnW9.Y9oK6N.hSre1a9Gv.D2v.H6qP4qP4qP4qP4qP4qP4q', 'user@musicwave.it', 'standard'),
-('prem_user', '$2y$10$mC7p0pAnW9.Y9oK6N.hSre1a9Gv.D2v.H6qP4qP4qP4qP4qP4qP4q', 'premium@musicwave.it', 'premium');
+('admin', '$2y$10$I1Stow1gg43UQGF9cL9msuL/ofR6GTmmsGbMp4p9J3zbssr8YmTEK', 'admin@musicwave.it', 'admin'),
+('user', '$2y$10$6gdXg2PPHubCSh2VqD0mT.yUtDF1dn6wi8T/aFTpIZxwIVmFVkQZ2', 'user@musicwave.it', 'standard'),
+('prem_user', '$2y$10$AQ7xugkO8XtX3GigSjcl4.27wvPVtM7H6mFy79HibrCHD3o6F2Cai', 'premium@musicwave.it', 'premium');
 
 -- Create a dedicated user with limited privileges
 -- In a real scenario, change 'StrongPassword123!' to a secure secret
