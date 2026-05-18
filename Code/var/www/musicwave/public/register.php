@@ -14,24 +14,27 @@ $error = false;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
-    // Sanitize and Validate Inputs
-    $email = SecurityUtils::validateEmail($_POST['email'] ?? '');	// if is not valid return false
-    $username = trim($_POST['username'] ?? ''); 			// clean
+    // Sanitize and Validate Inputs (use SecurityUtils class)
+    $email = SecurityUtils::validateEmail($_POST['email'] ?? '');		// if is not valid return false
+    $username = SecurityUtils::validateUsername($_POST['username'] ?? '');	// clean and check the username
+    
+    // password check (max 72 chars, BCRYPT requirements)
     $password = $_POST['password'] ?? '';
     $confirm_password = $_POST['confirm_password'] ?? '';
-
+    $password_valid = SecurityUtils::validatePassword($password);
+    
     // Check Requirements
     if (!$email) {
-        $message = "Please provide a valid email address.";		// invalid email
+        $message = "Please provide a valid email address (max 255 characters).";
         $error = true;
-    } elseif (empty($username) || strlen($username) < 3) {
-        $message = "Username must be at least 3 characters long.";	// username too small
+    } elseif (!$username) {
+        $message = "Username must be between 3 and 20 characters and contain only letters, numbers, or underscores.";
         $error = true;
-    } elseif (strlen($password) < 8) {
-        $message = "Password must be at least 8 characters long.";	// psw too small
+    } elseif (!$password_valid) {
+        $message = "Password must be between 8 and 72 characters long.";
         $error = true;
     } elseif ($password !== $confirm_password) {
-        $message = "Passwords do not match.";				// psw and confirm don't match
+        $message = "Passwords do not match.";
         $error = true;
     } else {
         // input are ok -> check if user already exists
@@ -62,6 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
     }
+    
 }
 ?>
 
@@ -70,6 +74,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <title>MusicWave - Register</title>
     <meta charset="UTF-8">
+    <style>
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .field-layout {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .input-field {
+            width: 250px;
+            padding: 5px;
+        }
+        .hint-text {
+            font-size: 0.85em;
+            color: #555;
+            font-style: italic;
+        }
+        .hint-strong {
+            color: #2b7a78;
+            font-weight: bold;
+        }
+    </style>
 </head>
 <body>
     <h2>Create a MusicWave Account</h2>
@@ -80,29 +107,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </p>
     <?php endif; ?>
 
-    <form method="POST" action="register.php">
-        <div>
+    <form method="POST" action="register.php" autocomplete="off">
+        
+        <div class="form-group">
             <label>Username (Visible to others):</label><br>
-            <input type="text" name="username" value="<?php echo htmlspecialchars($_POST['username'] ?? ''); ?>" required>
+            <div class="field-layout">
+                <input type="text" name="username" class="input-field" 
+                       value="<?php echo htmlspecialchars($_POST['username'] ?? ''); ?>" 
+                       maxlength="20" required>
+                <span class="hint-text">3 to 20 characters. Only letters, numbers, and the underscore (_) are allowed. <br><strong>No spaces or special characters.</strong></span>
+            </div>
         </div>
-        <br>
-        <div>
+
+        <div class="form-group">
             <label>Email Address:</label><br>
-            <input type="email" name="email" value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>" required>
+            <div class="field-layout">
+                <input type="email" name="email" class="input-field" 
+                       value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>" 
+                       maxlength="255" required>
+                <span class="hint-text">Please enter a valid email address. It will be used to log in and recover your account. (Max 255 characters)</span>
+            </div>
         </div>
-        <br>
-        <div>
-            <label>Password (min. 8 chars):</label><br>
-            <input type="password" name="password" required>
+
+        <div class="form-group">
+            <label>Password:</label><br>
+            <div class="field-layout">
+                <input type="password" name="password" class="input-field" maxlength="72" required>
+                <span class="hint-text">Length: <span class="hint-strong">8 - 72 chars</span>.<br>
+                Tip: To make it robust, include at least one capital letter, one number, and one symbol (e.g., @, #, !). Avoid common words.</span>
+            </div>
         </div>
-        <br>
-        <div>
+
+        <div class="form-group">
             <label>Confirm Password:</label><br>
-            <input type="password" name="confirm_password" required>
+            <div class="field-layout">
+                <input type="password" name="confirm_password" class="input-field" maxlength="72" required>
+                <span class="hint-text">Please retype the password you entered above to verify that it is correct.</span>
+            </div>
         </div>
-        <br>
-        <button type="submit">Register</button>
+
+        <button type="submit" style="padding: 8px 15px; margin-top: 10px;">Register</button>
     </form>
+    
     <p><a href="login.php">Already have an account? Login here.</a></p>
 </body>
 </html>
