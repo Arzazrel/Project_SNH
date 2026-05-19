@@ -9,6 +9,26 @@ require_once __DIR__ . '/logger_setup.php';
 class SecurityUtils {
 
     /**
+    * Sends secure HTTP headers to prevent Clickjacking, MIME-sniffing.
+    * Should be called at the very beginning of every script.
+    *
+    * NOTE 0 - ("X-Frame-Options: DENY")
+    * Mitigates: Clickjacking attacks
+    * instructs browsers to completely block your web page from rendering inside an <frame> or <iframe> on any site—including your own domain, ensuring malicious sites cannot overlay or embed your content.
+    *
+    * NOTE 1 - ("X-Content-Type-Options: nosniff")
+    * Mitigates: MIME-sniffing vulnerabilities and cross-site scripting (XSS)
+    * Forces the browser to strictly adhere to the Content-Type header sent by the server, preventing it from executing non-executable files (like text or images) as scripts
+    */
+    public static function sendSecurityHeaders() {
+    	if (!headers_sent()) {
+    	    header("X-Frame-Options: DENY"); 			// SEE NOTE 0
+	    header("X-Content-Type-Options: nosniff");		// SEE NOTE 1
+	    header("Content-Type: text/html; charset=UTF-8");
+	}
+    }
+
+    /**
      * Removes null bytes and cleans input string/array recursively.
      * Prevents Null Byte Injection attacks.
      */
