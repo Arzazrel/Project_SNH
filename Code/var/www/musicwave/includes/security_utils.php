@@ -28,6 +28,8 @@ class SecurityUtils {
 	}
     }
 
+    // --- INPUT SANITIZATION AND FILTERS ---
+
     /**
      * Removes null bytes and cleans input string/array recursively.
      * Prevents Null Byte Injection attacks.
@@ -78,7 +80,7 @@ class SecurityUtils {
         $clean = self::sanitizeInput($email);
         if (strlen($clean) > 255 || !filter_var($clean, FILTER_VALIDATE_EMAIL)) {
             global $securityLogger;
-            $securityLogger->warning("Invalid email format for username", ["email" => $email]);
+            $securityLogger->warning("Invalid email format for username", ["email" => $clean]);
             return false;
         }
         return $email;
@@ -90,15 +92,15 @@ class SecurityUtils {
      * Logs a warning if the format is invalid.
      */
     public static function validatePassword($password) {
-	    // length check
-	    $length = strlen($password);
-	    if ($length < 8 || $length > 72) {
-		global $securityLogger;
-		$securityLogger->warning("Password validation failed: invalid length", ["length" => $length]);
-		return false;
-	    }
+    	// length check
+	$length = strlen($password);
+	if ($length < 8 || $length > 72) {
+	    global $securityLogger;
+	    $securityLogger->warning("Password validation failed: invalid length", ["length" => $length]);
+	    return false;
+	}
 	    /*
-	    // 2. Regex per la complessità:
+	    // Regex for password complexity check
 	    // (?=.*[a-z]) -> at least a lower case
 	    // (?=.*[A-Z]) -> at least an upper case
 	    // (?=.*\d)    -> at least one number
@@ -112,5 +114,88 @@ class SecurityUtils {
     	return true; // La password è valida
     }
     
+    // --- SESSION MANAGEMENT ---
+
+    /**
+     * Starts a secure PHP session and checks for inactivity timeout.
+     * Redirects to logout/login if the session has expired.
+     */
+    public static function startSecureSession() {
+        // check if already exist a started or activated session
+        if (session_status() === PHP_SESSION_NONE) {
+            // there isn't a session, start a new session -> configuring session cookie parameters
+            session_set_cookie_params([
+                'lifetime' => 0,                      // Cookie expires when the browser closes
+                'path' => '/',                        // Valid for the entire application domain
+                'domain' => '',                       // Current host
+                'secure' => true,                     // to force https only
+                'httponly' => true,                   // Mitigates XSS: Prevents JavaScript from reading the session token
+                'samesite' => 'Strict'                // Mitigates CSRF: Restricts cross-site cookie transmission
+            ]);
+
+            session_start();	// start or restart session
+        }
+
+    	// there is an active session -> SESSION TIMEOUT LOGIC (10 Minutes)
+    	$timeout_duration = 600; 	// 10 minutes * 60 seconds
+
+	// check the last access time
+        if (isset($_SESSION['last_access'])) {
+            
+            $session_age = time() - $_SESSION['last_access'];		// calculate session age
+            if ($session_age > $timeout_duration) {
+            	// session has expired, clear data and force logout
+            	self::destroySession();
+            	header("Location: login.php?error=timeout");
+            	exit();
+            }
+        }
+    
+        // update last access time for active users (check if there is a session by 'user_id' field)
+        if (isset($_SESSION['user_id'])) {
+            $_SESSION['last_access'] = time();
+        }
+    }
+
+    /**
+     * Regenerates the session ID: generates a completely new and random PHPSESSID for the current user. The true parameter is to delete the old session file on the server.
+     * Mitigates: Session Fixation attacks. An attacker takes a valid but not yet logged-in session ID and inserts it into the victim's browser via a malicious link. 
+     * 		  If the victim enters their credentials and logs in using the ID, the attacker find themselves logged in as the victim. 
+     * 		  By regenerating the ID immediately after logging in, the old ID becomes worthless, and the user receives a secure, secret token.
+     */
+    public static function rotateSessionId() {
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_regenerate_id(true);		// generate a new random session ID and delete the old server-side storage file
+        }
+     }
+
+     /**
+      * Fully destroys a session on both server-side and client-side (ex. Logout).
+      * Used for: logout, session timeout (inactivity for 10 minutes), Security Anomaly Detected (session hijacking).
+      */
+     public static function destroySession() {
+    	// check if there is a current session 
+    	if (session_status() === PHP_SESSION_NONE) {
+            session_start();				// start a session to destroy
+        }
+
+        $_SESSION = array();	// clear the server-side $_SESSION array, equal to session_unset. Free data from memory
+
+     	// delete the session cookie from the client's browser
+     	if (ini_get("session.use_cookies")) {
+            $params = session_get_cookie_params();
+                setcookie(
+                    session_name(), 
+            	    '', 
+                    time() - 42000, 		// Backdate expiration time to force deletion
+                    $params["path"], 
+                    $params["domain"], 
+                    $params["secure"], 
+                    $params["httponly"]
+            );
+         }
+         
+    	session_destroy();		// destroy the session file on the server
+    }
 }
 ?>
