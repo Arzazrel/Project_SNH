@@ -9,14 +9,33 @@ require_once DIR_INCLUDES . 'db_connect.php';
 require_once DIR_INCLUDES . 'logger_setup.php';
 require_once DIR_INCLUDES . 'security_utils.php';
 
+SecurityUtils::startSecureSession();		// start secure session
+
+// Redirect if the user is already logged in
+if (isset($_SESSION['user_id'])) {
+    header("Location: dashboard.php");		// redirect to main page
+    exit();
+}
+
+SecurityUtils::sendSecurityHeaders();		// security headerss
+
+// vars initializations
 $message = "";
 $error = false;
 
+// initialize empty variables in case of GET request (to prevent display errors)
+$display_username = "";
+$display_email = "";
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
-    // Sanitize and Validate Inputs (use SecurityUtils class)
+    // -- Sanitize and Validate Inputs (use SecurityUtils class) --
+    // keep a clean version to put back into the form in case of an error
+    $display_username = SecurityUtils::sanitizeInput($_POST['username'] ?? '');
+    $display_email = SecurityUtils::sanitizeInput($_POST['email'] ?? '');
+    
     $email = SecurityUtils::validateEmail($_POST['email'] ?? '');		// if is not valid return false
-    $username = SecurityUtils::validateUsername($_POST['username'] ?? '');	// clean and check the username
+    $username = SecurityUtils::validateUsername($_POST['username'] ?? '');	// clean and check the username, if is not valid return false
     
     // password check (max 72 chars, BCRYPT requirements)
     $password = $_POST['password'] ?? '';
@@ -58,6 +77,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($stmt->execute()) {
                 $message = "Registration successful! You can now login.";
                 $accessLogger->info("New user registered", ["email" => $email, "username" => $username]);	// write logs
+                
+                SecurityUtils::rotateSessionId();	// rotate session ID to mitigate session fixation
+                header("Location: login.php");		// redirect to login page
+                exit();
             } else {
                 $errorLogger->error("Failed to insert user into DB", ["error" => $conn->error]);		// write log
                 $message = "A technical error occurred.";
@@ -113,7 +136,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <label>Username (Visible to others):</label><br>
             <div class="field-layout">
                 <input type="text" name="username" class="input-field" 
-                       value="<?php echo htmlspecialchars($_POST['username'] ?? ''); ?>" 
+                       value="<?php echo htmlspecialchars($display_username ?? ''); ?>" 
                        maxlength="20" required>
                 <span class="hint-text">3 to 20 characters. Only letters, numbers, and the underscore (_) are allowed. <br><strong>No spaces or special characters.</strong></span>
             </div>
@@ -123,7 +146,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <label>Email Address:</label><br>
             <div class="field-layout">
                 <input type="email" name="email" class="input-field" 
-                       value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>" 
+                       value="<?php echo htmlspecialchars($display_email ?? ''); ?>" 
                        maxlength="255" required>
                 <span class="hint-text">Please enter a valid email address. It will be used to log in and recover your account. (Max 255 characters)</span>
             </div>
