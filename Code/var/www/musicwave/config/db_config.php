@@ -19,6 +19,12 @@ define("DIR_PUBLIC", DIR_BASE . 'public/');
 // Security: Logs must be even further away or in a dedicated system path
 define("DIR_LOGS", '/var/www/musicwave_logs/');
 
+// Server absolute path for file uploads (used by PHP move_uploaded_file)
+define('DIR_UPLOADS_AUDIO', DIR_PUBLIC . 'uploads/audio/');
+
+// Public URL path for the web browser (used by HTML audio tags)
+define('URL_UPLOADS_AUDIO', 'uploads/audio/');
+
 /** 
  * DATABASE CREDENTIALS for the dedicated low-privileged user.
  * For security purpose this file should be stored outside the web root or protected.
@@ -26,7 +32,7 @@ define("DIR_LOGS", '/var/www/musicwave_logs/');
 
 define('DB_HOST', 'localhost');
 define('DB_NAME', 'music_wave_DB');
-define('DB_USER', 'musicwave_user'); 		// Dedicated user, NOT root
+define('DB_USER', 'musicwave_user'); 		// dedicated user, NOT root
 define('DB_PASS', 'StrongPassword123!'); 	// actual password set in MySQL
 
 /**
@@ -34,4 +40,11 @@ define('DB_PASS', 'StrongPassword123!'); 	// actual password set in MySQL
  */
 define('MAX_LOGIN_ATTEMPTS', 3);
 define('LOCKOUT_TIME_MINUTES', 15);
+
+/**
+ * Ingestion and Upload Restrictions
+ */
+define('MAX_LYRICS_LENGTH', 65535);          	// maximum characters for standard MySQL TEXT
+define('MAX_TITLE_AUTHOR_LENGTH', 255);       	// maximum characters for standard MySQL TEXT
+define('MAX_AUDIO_FILE_SIZE', 10485760);     	// 10 Megabytes in bytes (10 * 1024 * 1024)
 ?>

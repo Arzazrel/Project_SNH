@@ -64,7 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($stmt->get_result()->num_rows > 0) {
             $message = "Email or Username already taken.";
             $error = true;
-            $securityLogger->warning("Registration attempt with existing email", ["email" => $email, "username" => $username]);
+            $securityLogger->warning("Registration attempt with existing email", ["email" => $email, "username" => $username, "ip" => $_SERVER['REMOTE_ADDR']]);
         } else {
             // hash the password using BCRYPT (NEVER store passwords in plain text or using MD5/SHA1)
             $hashed_password = password_hash($password, PASSWORD_BCRYPT);

@@ -52,7 +52,7 @@ class SecurityUtils {
         // RegEx whitelist
         if (!preg_match("/^[a-zA-Z0-9\s\.,!\?'\-]*$/", $clean)) {
             global $securityLogger;
-            $securityLogger->warning("Illegal characters detected in lyrics", ["input" => $text]);
+            $securityLogger->warning("Illegal characters detected in lyrics", ["input" => $text, "ip" => $_SERVER['REMOTE_ADDR']]);
             return false; 
         }
         return $clean;
@@ -66,7 +66,7 @@ class SecurityUtils {
         // lenght 3-20, alphanumeric and underscore only
         if (!preg_match("/^[a-zA-Z0-9_]{3,20}$/", $clean)) {
             global $securityLogger;
-            $securityLogger->warning("Invalid username format", ["input" => $username]);
+            $securityLogger->warning("Invalid username format", ["input" => $username, "ip" => $_SERVER['REMOTE_ADDR']]);
             return false;
         }
         return $username;
@@ -80,7 +80,7 @@ class SecurityUtils {
         $clean = self::sanitizeInput($email);
         if (strlen($clean) > 255 || !filter_var($clean, FILTER_VALIDATE_EMAIL)) {
             global $securityLogger;
-            $securityLogger->warning("Invalid email format for username", ["email" => $clean]);
+            $securityLogger->warning("Invalid email format for username", ["email" => $clean, "ip" => $_SERVER['REMOTE_ADDR']]);
             return false;
         }
         return $email;
@@ -96,7 +96,7 @@ class SecurityUtils {
 	$length = strlen($password);
 	if ($length < 8 || $length > 72) {
 	    global $securityLogger;
-	    $securityLogger->warning("Password validation failed: invalid length", ["length" => $length]);
+	    $securityLogger->warning("Password validation failed: invalid length", ["length" => $length, "ip" => $_SERVER['REMOTE_ADDR']]);
 	    return false;
 	}
 	    /*
