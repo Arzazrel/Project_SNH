@@ -33,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // check the result of the email validation
     if (!$email) {
-        $securityLogger->warning("Login attempt with invalid email format", ["input" => $email_raw]);	// set log
+        $securityLogger->warning("Login attempt with invalid email format", ["input" => $email_raw, "ip" => $_SERVER['REMOTE_ADDR']]);	// set log
         $error_message = "Invalid credentials or account locked.";						// set error_mex
     } else {
         
@@ -52,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             // check for Account Lockout
             if ($lock_until && $lock_until > $now) {	// - start - if 0.1 - [account locked]
-                $securityLogger->warning("Login attempt on locked account", ["email" => $email]);	// write log
+                $securityLogger->warning("Login attempt on locked account", ["email" => $email, "ip" => $_SERVER['REMOTE_ADDR']]);	// write log
                 $error_message = "Account temporarily locked. Please try again later.";			// set error_mex
             } 		// - end - if 0.1 -
             else {	// - start - else 0.1 - [account not locked]
@@ -89,13 +89,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $new_attempts = $user['login_attempts'] + 1;						 		// update the number of the attempt (manage server side)
                     $new_lock = null;
 
-		    $securityLogger->warning("Failed login attempt", ["email" => $email, "attempt_no" => $new_attempts]);	// write log
+		    $securityLogger->warning("Failed login attempt", ["email" => $email, "attempt_no" => $new_attempts, "ip" => $_SERVER['REMOTE_ADDR']]);	// write log
                     $error_message = "Invalid credentials or account locked.";							// set error mex
 
 		    // check if has reached the maximum number of attempts.
                     if ($new_attempts >= MAX_LOGIN_ATTEMPTS) {
                         $new_lock = (new DateTime())->modify('+' . LOCKOUT_TIME_MINUTES . ' minutes')->format('Y-m-d H:i:s');	// set new lockout time
-                        $securityLogger->critical("Account locked: too many failed attempts", ["username" => $email]); 		// write log
+                        $securityLogger->critical("Account locked: too many failed attempts", ["username" => $email, "ip" => $_SERVER['REMOTE_ADDR']]); 		// write log
                     }
 
                     $update_stmt = $conn->prepare("UPDATE users SET login_attempts = ?, lock_until = ? WHERE id = ?");		// prepared query for update lock for the user
@@ -106,7 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // - end - if 0 - [user found]
         } else {	// - start - else 0 - [user not found]
             // User not found: log it but show generic error to prevent User Enumeration
-            $securityLogger->warning("Login attempt for non-existent user", ["email" => $email]);		// write log
+            $securityLogger->warning("Login attempt for non-existent user", ["email" => $email, "ip" => $_SERVER['REMOTE_ADDR']]);		// write log
             $error_message = "Invalid credentials or account locked.";						// set error mex
         }		// - end - else 0 - [user not found]
     }
