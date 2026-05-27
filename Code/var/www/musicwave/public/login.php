@@ -22,6 +22,8 @@ if (isset($_SESSION['user_id'])) {
 SecurityUtils::sendSecurityHeaders();		// security headers
 
 $error_message = "";		// var contanining the text for the error mex
+// Decoy constant: a valid but generic BCRYPT hash (matches the string 'dummy') used to waste CPU time when the real user is not present or is blocked
+$dummy_hash = '$2y$10$abcdefghijklmnopqrstuvwx23456789012345678901234567890';
 
 // Handle the POST request
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -54,6 +56,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($lock_until && $lock_until > $now) {	// - start - if 0.1 - [account locked]
                 $securityLogger->warning("Login attempt on locked account", ["email" => $email, "ip" => $_SERVER['REMOTE_ADDR']]);	// write log
                 $error_message = "Account temporarily locked. Please try again later.";			// set error_mex
+                
+            	password_verify($password_raw, $dummy_hash);	// ANTI-TIMING PROTECTION: run a dummy BCRYPT to simulate password checking time
             } 		// - end - if 0.1 -
             else {	// - start - else 0.1 - [account not locked]
                 // Account is not blocked, now verify Password using BCRYPT
@@ -108,6 +112,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // User not found: log it but show generic error to prevent User Enumeration
             $securityLogger->warning("Login attempt for non-existent user", ["email" => $email, "ip" => $_SERVER['REMOTE_ADDR']]);		// write log
             $error_message = "Invalid credentials or account locked.";						// set error mex
+            
+            password_verify($password_raw, $dummy_hash);	// ANTI-TIMING PROTECTION: run a dummy BCRYPT to simulate password checking time
         }		// - end - else 0 - [user not found]
     }
 }
