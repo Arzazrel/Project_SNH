@@ -47,4 +47,14 @@ define('LOCKOUT_TIME_MINUTES', 15);
 define('MAX_LYRICS_LENGTH', 65535);          	// maximum characters for standard MySQL TEXT
 define('MAX_TITLE_AUTHOR_LENGTH', 255);       	// maximum characters for standard MySQL TEXT
 define('MAX_AUDIO_FILE_SIZE', 10485760);     	// 10 Megabytes in bytes (10 * 1024 * 1024)
+
+/**
+ * SMTP Mail Server Settings
+ */
+define('SMTP_HOST', 'smtp.gmail.com');
+define('SMTP_PORT', 587); 				// standard port for TLS
+define('SMTP_USER', 'project_SNH_26@gmail.com');
+define('SMTP_PASS', 'wjts olvw oeeu ubmg'); 		// google account app password
+define('MAIL_FROM_NAME', 'MusicWave Security Team');
+define('BASE_URL', DIR_BASE);				
 ?>

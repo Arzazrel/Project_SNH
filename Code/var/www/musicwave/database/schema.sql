@@ -9,6 +9,9 @@ CREATE TABLE IF NOT EXISTS users (
     password_hash VARCHAR(255) NOT NULL,
     email VARCHAR(100) NOT NULL UNIQUE,
     role ENUM('standard', 'premium', 'admin') DEFAULT 'standard',
+    status ENUM('pending', 'confirmed') DEFAULT 'pending',          -- activation status
+    activation_token VARCHAR(64) DEFAULT NULL,                      -- single use secret
+    activation_expires TIMESTAMP NULL DEFAULT NULL,                 -- Activation token expiration
     reset_token VARCHAR(64) DEFAULT NULL,
     reset_token_expiration TIMESTAMP NULL DEFAULT NULL,
     login_attempts INT DEFAULT 0,
@@ -44,15 +47,43 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Table optimized for IP-based rate limiting (used to limit registration requests)
+CREATE TABLE IF NOT EXISTS rate_limits (
+    ip_address VARCHAR(45) NOT NULL,
+    action_type ENUM('registration', 'validate') NOT NULL,
+    attempt_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (ip_address, action_type, attempt_timestamp)
+);
+
 -- Entering test users (Passwords: 'admin', 'user', 'prem_user')
 -- Hashes are generated with BCRYPT (PASSWORD_DEFAULT in PHP)
-INSERT INTO users (username, password_hash, email, role) VALUES 
-('admin', '$2y$10$I1Stow1gg43UQGF9cL9msuL/ofR6GTmmsGbMp4p9J3zbssr8YmTEK', 'admin@musicwave.it', 'admin'),
-('user', '$2y$10$6gdXg2PPHubCSh2VqD0mT.yUtDF1dn6wi8T/aFTpIZxwIVmFVkQZ2', 'user@musicwave.it', 'standard'),
-('prem_user', '$2y$10$AQ7xugkO8XtX3GigSjcl4.27wvPVtM7H6mFy79HibrCHD3o6F2Cai', 'premium@musicwave.it', 'premium');
+INSERT INTO users (username, password_hash, email, role, status) VALUES 
+('admin', '$2y$10$I1Stow1gg43UQGF9cL9msuL/ofR6GTmmsGbMp4p9J3zbssr8YmTEK', 'admin@musicwave.it', 'admin', 'confirmed'),
+('user', '$2y$10$6gdXg2PPHubCSh2VqD0mT.yUtDF1dn6wi8T/aFTpIZxwIVmFVkQZ2', 'user@musicwave.it', 'standard', 'confirmed'),
+('prem_user', '$2y$10$AQ7xugkO8XtX3GigSjcl4.27wvPVtM7H6mFy79HibrCHD3o6F2Cai', 'premium@musicwave.it', 'premium', 'confirmed');
 
 -- Create a dedicated user with limited privileges
 -- In a real scenario, change 'StrongPassword123!' to a secure secret
 CREATE USER IF NOT EXISTS 'musicwave_user'@'localhost' IDENTIFIED BY 'StrongPassword123!';
 -- Grant DML (Data Manipulation Language) permissions only
 GRANT SELECT, INSERT, UPDATE, DELETE ON music_wave_DB.* TO 'musicwave_user'@'localhost';
+
+-- Enable the Event Scheduler in the MariaDB engine
+SET GLOBAL event_scheduler = ON;
+
+DELIMITER $$
+-- Create a cyclic event that cleans up expired pending records every hour
+CREATE EVENT IF NOT EXISTS purge_expired_pending_users_and_log
+ON SCHEDULE EVERY 1 HOUR
+DO
+BEGIN
+    -- Delete rate limit attempts older than 15 minutes to save space
+    DELETE FROM rate_limits 
+    WHERE attempt_timestamp < NOW() - INTERVAL 15 MINUTE;
+
+    -- Delete unconfirmed pending accounts within 24 hours.
+    DELETE FROM users 
+    WHERE status = 'pending' 
+      AND created_at < NOW() - INTERVAL 1 DAY;
+END$$
+DELIMITER ;

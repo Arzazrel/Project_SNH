@@ -197,5 +197,36 @@ class SecurityUtils {
          
     	session_destroy();		// destroy the session file on the server
     }
+    
+    /**
+     * Checks whether an IP address has exceeded the maximum retry limit for a given action. If it hasn't passed it, log the current attempt.
+     * @param mysqli $conn Connessione al database
+     * @param string $action L'azione da controllare ('registration' o 'login')
+     * @return bool True se l'accesso è consentito, False se l'IP è bloccato (Rate Limit superato)
+     */
+    public static function checkRateLimit(mysqli $conn, string $action): bool {
+    	$ip = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+	    
+	// Counts the attempts made by this IP in the last 15 minutes for this specific action
+	$stmt = $conn->prepare("SELECT COUNT(*) FROM rate_limits WHERE ip_address = ? AND action_type = ? AND attempt_timestamp > NOW() - INTERVAL 15 MINUTE");
+	$stmt->bind_param("ss", $ip, $action);
+	$stmt->execute();
+	$result = $stmt->get_result()->fetch_row();
+	$attempts = $result[0];
+	$stmt->close();
+
+	// MAX_LOGIN_ATTEMPTS is defined in db_config.php and is equal to 3
+	if ($attempts >= MAX_LOGIN_ATTEMPTS) {
+	    return false; 				# block, too many attempts
+	}
+
+	// If it is below the limit, we record this new attempt in the table
+	$stmt = $conn->prepare("INSERT INTO rate_limits (ip_address, action_type) VALUES (?, ?)");
+	$stmt->bind_param("ss", $ip, $action);
+	$stmt->execute();
+	$stmt->close();
+
+	return true; // Accesso consentito
+    }
 }
 ?>

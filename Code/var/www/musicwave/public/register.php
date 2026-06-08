@@ -8,6 +8,12 @@ require_once __DIR__ . '/../config/db_config.php';
 require_once DIR_INCLUDES . 'db_connect.php';
 require_once DIR_INCLUDES . 'logger_setup.php';
 require_once DIR_INCLUDES . 'security_utils.php';
+// We include Composer's central autoloader (automatically loads Monolog and PHPMailer)
+require_once DIR_VENDOR . 'autoload.php';
+
+// import the necessary namespaces for PHPMailer
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
 
 SecurityUtils::startSecureSession();		// start secure session
 
@@ -17,7 +23,12 @@ if (isset($_SESSION['user_id'])) {
     exit();
 }
 
-SecurityUtils::sendSecurityHeaders();		// security headerss
+SecurityUtils::sendSecurityHeaders();		// security headers
+
+// Generate an Anti-CSRF token specifically for the Guest registration form if not already present
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
 
 // vars initializations
 $message = "";
@@ -28,6 +39,24 @@ $display_username = "";
 $display_email = "";
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    
+    // check presence and validity of the token. Use of hash_equals to prevent timing attack during string comparision (apply Costant-Time Comparison)
+    if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+        global $securityLogger;
+    	$securityLogger->warning("Guest CSRF registration attempt blocked", ["ip" => $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN_IP']);		// write in security log
+    	header("HTTP/1.1 403 Forbidden");			// redirect ot an error page to visualize the attack for the user
+    	exit("Security Error: Invalid or missing CSRF Token.");
+    }
+
+    unset($_SESSION['csrf_token']);		// one-time use-> destroy the token immediately after verification to prevent reuse
+    
+    // RATE LIMITING CONTROL (Protection against application-level DoS attacks on the CPU and Mail Flooding)
+    if (!SecurityUtils::checkRateLimit($conn, 'registration')) {
+        global $securityLogger;
+        $securityLogger->warning("Registration DoS block triggered (Rate limit exceeded)", ["ip" => $_SERVER['REMOTE_ADDR']]);		// write in security log
+        header("HTTP/1.1 429 Too Many Requests");		// redirect ot an error page to visualize the attack for the user
+        exit("Too many registration attempts. Please try again after 15 minutes.");
+    }
     
     // -- Sanitize and Validate Inputs (use SecurityUtils class) --
     // keep a clean version to put back into the form in case of an error
@@ -68,27 +97,86 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             // hash the password using BCRYPT (NEVER store passwords in plain text or using MD5/SHA1)
             $hashed_password = password_hash($password, PASSWORD_BCRYPT);
+            
+            // Generation of the one-time activation secret code (Activation Token)
+            $activation_token = bin2hex(random_bytes(32));
+            // Let's set the activation token expiration to +24 hours from now
+            $expires_at = date('Y-m-d H:i:s', strtotime('+1 day'));
+            $status = 'pending';
 
             // insert new user
-            $stmt = $conn->prepare("INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)");
-            $stmt->bind_param("sss", $username, $email, $hashed_password);
+            $stmt = $conn->prepare("INSERT INTO users (username, email, password_hash, status, activation_token, activation_expires) VALUES (?, ?, ?, ?, ?, ?)");
+            $stmt->bind_param("ssssss", $username, $email, $hashed_password, $status, $activation_token, $expires_at);
 		
 	    // check success for register operation
             if ($stmt->execute()) {
-                $message = "Registration successful! You can now login.";
-                $accessLogger->info("New user registered", ["email" => $email, "username" => $username]);	// write logs
-                
-                SecurityUtils::rotateSessionId();	// rotate session ID to mitigate session fixation
-                header("Location: login.php");		// redirect to login page
-                exit();
+            
+            	// sending real email with PHPmailer via secure SMTP
+            	$mail = new PHPMailer(true);
+                try {
+                    // Configurazione del Server SMTP (Costanti definite in db_config.php)
+                    $mail->isSMTP();
+                    $mail->Host       = SMTP_HOST;
+                    $mail->SMTPAuth   = true;
+                    $mail->Username   = SMTP_USER;
+                    $mail->Password   = SMTP_PASS; // App Password di Google a 16 caratteri
+                    $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+                    $mail->Port       = SMTP_PORT;
+
+                    // Mittente e Destinatario
+                    $mail->setFrom(SMTP_USER, MAIL_FROM_NAME);
+                    $mail->addAddress($email, $username);
+
+                    // Contenuto dell'email
+                    $mail->isHTML(true);
+                    $mail->Subject = 'Verify your MusicWave Account';
+                    
+                    // Link di attivazione puntato alla pagina pubblica verify.php
+                    $activation_link = BASE_URL . "public/verify.php?token=" . $activation_token;
+                    
+                    $mail->Body    = "<h1>Welcome to MusicWave, " . htmlspecialchars($username) . "!</h1>
+                                      <p>Please click the button below to verify your email address and activate your account:</p>
+                                      <p><a href='" . $activation_link . "' style='display:inline-block; padding: 10px 20px; background-color: #2b7a78; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;'>Verify Account</a></p>
+                                      <p>This link will expire in 24 hours.</p>
+                                      <p>If you did not request this registration, you can safely ignore this message.</p>";
+                    
+                    $mail->AltBody = "Welcome to MusicWave! Please copy and paste the following link into your browser to activate your account: " . $activation_link;
+
+                    $mail->send();
+                    
+                    global $accessLogger;
+                    $accessLogger->info("New user registered and verification mail sent", ["email" => $email, "username" => $username]);	// write access logs
+                    $message = "Registration successful! Please check your mailbox to activate your account before attempting to log in.";
+                    
+                    // reset the fields to empty the graphic form in case of success
+                    $display_username = "";
+                    $display_email = "";
+                    
+                    SecurityUtils::rotateSessionId();	// rotate session ID to mitigate session fixation
+                    
+                } catch (Exception $e) {
+                    // manual logical transaction (Rollback): If the email send fails, we delete the user from the DB to allow them to try again, avoiding leaving an orphaned 'pending' account.
+                    $stmt_rollback = $conn->prepare("DELETE FROM users WHERE email = ?");
+                    $stmt_rollback->bind_param("s", $email);
+                    $stmt_rollback->execute();
+                    $stmt_rollback->close();
+
+                    global $errorLogger;
+                    $errorLogger->error("Mailer Error. Registration rolled back.", ["error" => $mail->ErrorInfo]);
+                    $message = "An error occurred while sending the verification email. Registration aborted. Please try again.";
+                    $error = true;
+                }
             } else {
                 $errorLogger->error("Failed to insert user into DB", ["error" => $conn->error]);		// write log
                 $message = "A technical error occurred.";
                 $error = true;
             }
         }
+        $stmt->close();
     }
     
+    // regenerate a new anti-CSRF token for the form in case the page is reloaded with errors.
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
 ?>
 
@@ -131,6 +219,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php endif; ?>
 
     <form method="POST" action="register.php" autocomplete="off">
+        <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
         
         <div class="form-group">
             <label>Username (Visible to others):</label><br>

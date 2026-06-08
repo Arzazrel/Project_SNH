@@ -37,22 +37,23 @@ $user_id = $_SESSION['user_id'];
 
 // Handle Form Submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
+    // check presence and validity of the token. Use of hash_equals to prevent timing attack during string comparision (apply Costant-Time Comparison)
+    if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+        global $securityLogger;
+    	$securityLogger->warning("CSRF attack attempt blocked on upload action", ["user_id" => $_SESSION['user_id'] ?? 'ANONYMOUS', "ip" => $_SERVER['REMOTE_ADDR']]);	// write in security log
+    	header("HTTP/1.1 403 Forbidden");			// redirect ot an error page to visualize the attack for the user
+    	exit("Security Error: Invalid or missing CSRF Token.");
+    }
+
+    unset($_SESSION['csrf_token']);		// one-time use-> destroy the token immediately after verification to prevent reuse
+    
     // sanitize all the inputs
     $upload_type = SecurityUtils::sanitizeInput($_POST['upload_type'] ?? '');
     $title = SecurityUtils::sanitizeInput($_POST['title'] ?? '');
     $author = SecurityUtils::sanitizeInput($_POST['author'] ?? '');
     $is_premium = isset($_POST['is_premium']) ? 1 : 0;
     
-    // check presence and validity of the token. Use of hash_equals to prevent timing attack during string comparision (apply Costant-Time Comparison)
-    if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
-        global $securityLogger;
-    	$securityLogger->warning("CSRF attack attempt blocked on upload action", ["user_id" => $_SESSION['user_id'] ?? 'ANONYMOUS']);	// write in security log
-    	header("HTTP/1.1 403 Forbidden");			// redirect ot an error page to visualize the attack for the user
-    	exit("Security Error: Invalid CSRF Token.");
-    }
-
-    unset($_SESSION['csrf_token']);		// one-time use-> destroy the token immediately after verification to prevent reuse
-
     // check and validate the required fields (title and author)
     if (empty($title) || empty($author)) {
         $message = "Title and Author fields are strictly required.";	// missing fields
