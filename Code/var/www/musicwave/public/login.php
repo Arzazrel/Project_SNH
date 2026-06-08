@@ -184,5 +184,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <br>
         <button type="submit">Login</button>
     </form>
+    
+    <br>
+    <p>
+        <a href="forgot_password.php">Forgot your password? Click here to recover it.</a>
+    </p>
 </body>
 </html>
