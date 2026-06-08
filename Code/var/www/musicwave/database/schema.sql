@@ -31,6 +31,8 @@ CREATE TABLE IF NOT EXISTS media (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+ALTER TABLE media ADD CONSTRAINT unique_song_lyrics UNIQUE (title, author);	-- to prevent duplicate
+
 -- Audit Logs table for post-incident investigation
 CREATE TABLE IF NOT EXISTS audit_logs (
     id INT AUTO_INCREMENT PRIMARY KEY,
