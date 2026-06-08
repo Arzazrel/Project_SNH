@@ -50,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     unset($_SESSION['csrf_token']);		// one-time use-> destroy the token immediately after verification to prevent reuse
     
-    // RATE LIMITING CONTROL (Protection against application-level DoS attacks on the CPU and Mail Flooding)
+    // rate limiting control (Protection against application-level DoS attacks on the CPU and Mail Flooding)
     if (!SecurityUtils::checkRateLimit($conn, 'registration')) {
         global $securityLogger;
         $securityLogger->warning("Registration DoS block triggered (Rate limit exceeded)", ["ip" => $_SERVER['REMOTE_ADDR']]);		// write in security log

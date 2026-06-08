@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 -- Table optimized for IP-based rate limiting (used to limit registration requests)
 CREATE TABLE IF NOT EXISTS rate_limits (
     ip_address VARCHAR(45) NOT NULL,
-    action_type ENUM('registration', 'validate') NOT NULL,
+    action_type ENUM('registration', 'validate','login') NOT NULL,
     attempt_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (ip_address, action_type, attempt_timestamp)
 );

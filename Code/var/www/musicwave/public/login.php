@@ -21,12 +21,34 @@ if (isset($_SESSION['user_id'])) {
 
 SecurityUtils::sendSecurityHeaders();		// security headers
 
+// Generate an Anti-CSRF token specifically for the Guest registration form if not already present
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
 $error_message = "";		// var contanining the text for the error mex
 // Decoy constant: a valid but generic BCRYPT hash (matches the string 'dummy') used to waste CPU time when the real user is not present or is blocked
 $dummy_hash = '$2y$10$abcdefghijklmnopqrstuvwx23456789012345678901234567890';
 
 // Handle the POST request
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    
+    // check presence and validity of the token. Use of hash_equals to prevent timing attack during string comparision (apply Costant-Time Comparison)
+    if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+        global $securityLogger;
+    	$securityLogger->warning("Login CSRF attempt blocked", ["ip" => $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN_IP']);		// write in security log
+    	header("HTTP/1.1 403 Forbidden");			// redirect ot an error page to visualize the attack for the user
+    	exit("Security Error: Invalid or missing CSRF Token.");
+    }
+    unset($_SESSION['csrf_token']);		// one-time use-> destroy the token immediately after verification to prevent reuse
+    
+    // rate limiting control (Protection against application-level DoS attacks on the CPU and Mail Flooding)
+    if (!SecurityUtils::checkRateLimit($conn, 'login')) {
+        global $securityLogger;
+        $securityLogger->warning("Login DoS block triggered (Rate limit exceeded for IP)", ["ip" => $_SERVER['REMOTE_ADDR']]);
+        header("HTTP/1.1 429 Too Many Requests");							// redirect ot an error page to visualize the attack for the user
+        exit("Too many login attempts from this connection. Please try again after 15 minutes.");
+    }
     
     $email_raw = SecurityUtils::sanitizeInput($_POST['email'] ?? '');	// Sanitize username in input (Null byte removal)
     $password_raw = $_POST['password'] ?? ''; 				// Don't sanitize passwords to avoid altering characters
@@ -40,11 +62,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         
         // Database operation with Prepared Statements, we fetch the password hash and lockout details
-        $stmt = $conn->prepare("SELECT id, username, password_hash, login_attempts, lock_until FROM users WHERE email = ?");	// prepared query
-        $stmt->bind_param("s", $email);			# put username into prepared query
-        $stmt->execute();				# execute the query
-        $result = $stmt->get_result();			# get results
-        $user = $result->fetch_assoc();			# get first raw of the result
+        $stmt = $conn->prepare("SELECT id, username, password_hash, status, login_attempts, lock_until FROM users WHERE email = ?");	// prepared query
+        $stmt->bind_param("s", $email);			// put username into prepared query
+        $stmt->execute();				// execute the query
+        $result = $stmt->get_result();			// get results
+        $user = $result->fetch_assoc();			// get first raw of the result
+        $stmt->close();					// close connection
 
 	// check, if the email is related to aregistered user
         if ($user) {	// - start - if 0 - [user found]
@@ -64,22 +87,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // SUCCESS login
                 if (password_verify($password_raw, $user['password_hash'])) {		// - start - if 0.1.1 - [correct password]
                     
-                    SecurityUtils::rotateSessionId();		// rotate session ID to mitigate session fixation
+                    // check pending status (Registered user but not activated via email)
+                    if ($user['status'] === 'pending') {
+                        $securityLogger->warning("Login blocked: Account registration is pending activation", ["email" => $email, "user_id" => $user['id']]);
+                        $error_message = "Your account is not verified yet. Please check your inbox and click the activation link.";
+                        
+                        password_verify($password_raw, $dummy_hash); // ANTI-TIMING: eseguiamo comunque per simulare lo stesso tempo di elaborazione
+                    } else {	// success login
                     
-                    // Reset attempts and set session
-                    $reset_stmt = $conn->prepare("UPDATE users SET login_attempts = 0, lock_until = NULL WHERE id = ?");	// prepared query for update 
-                    $reset_stmt->bind_param("i", $user['id']);
-                    $reset_stmt->execute();
+		    	SecurityUtils::rotateSessionId();		// rotate session ID to mitigate session fixation
+		            
+		        // Reset attempts and set session
+		        $reset_stmt = $conn->prepare("UPDATE users SET login_attempts = 0, lock_until = NULL WHERE id = ?");	// prepared query for update 
+		        $reset_stmt->bind_param("i", $user['id']);
+		        $reset_stmt->execute();
+		        $reset_stmt->close();
 
-                    $_SESSION['user_id'] = $user['id'];		// set user_id
-                    $_SESSION['email'] = $email;		// set email
-                    $_SESSION['username'] = $user['username'];	// set username
-                    $_SESSION['last_access'] = time(); 		// set initial time for timeout tracking
-                    
-                    $accessLogger->info("User logged in successfully", ["user_id" => $user['id'], "email" => $email]);		// write log
-                    
-                    header("Location: dashboard.php");	// redirect to user page
-                    exit();
+		        $_SESSION['user_id'] = $user['id'];		// set user_id
+		        $_SESSION['email'] = $email;		// set email
+		        $_SESSION['username'] = $user['username'];	// set username
+		        $_SESSION['last_access'] = time(); 		// set initial time for timeout tracking
+		            
+		        $accessLogger->info("User logged in successfully", ["user_id" => $user['id'], "email" => $email]);		// write log
+		           
+		        header("Location: dashboard.php");	// redirect to user page
+		        exit();
+		    }
                 } 		// - end - if 0.1.1 - [correct password]
                 // - start - esle 0.1.1 - [not correct password]
                 else {			// NOT SUCCESS login, user insert incorrect psw
@@ -105,6 +138,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $update_stmt = $conn->prepare("UPDATE users SET login_attempts = ?, lock_until = ? WHERE id = ?");		// prepared query for update lock for the user
                     $update_stmt->bind_param("isi", $new_attempts, $new_lock, $user['id']);
                     $update_stmt->execute();
+                    $update_stmt->close();
                 }		// - end - esle 0.1.1 - [not correct password]
             }		// - end - else 0.1 - [account not locked]
         // - end - if 0 - [user found]
@@ -116,6 +150,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             password_verify($password_raw, $dummy_hash);	// ANTI-TIMING PROTECTION: run a dummy BCRYPT to simulate password checking time
         }		// - end - else 0 - [user not found]
     }
+    
+    // regenerate a new anti-CSRF token for the form in case the page is reloaded with errors.
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
 ?>
 
@@ -133,6 +170,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php endif; ?>
 
     <form method="POST" action="login.php">
+        <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
+        
         <div>
             <label>Email:</label><br>
             <input type="email" name="email" required>
