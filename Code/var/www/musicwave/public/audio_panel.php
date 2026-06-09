@@ -13,10 +13,18 @@ if (!isset($_SESSION['user_id']) || !defined('DIR_MODULES')) {
 
 global $conn, $securityLogger;
 
+$user_role = $_SESSION['role'] ?? 'standard';
+$is_premium_user = ($user_role === 'premium');
+
 try {
-    // Fetch available audio tracks. Fields are encrypted/escaped during execution output.
-    $query = "SELECT id, track_name, file_path, duration FROM audio_tracks ORDER BY track_name ASC";
-    $stmt = $conn->prepare($query);
+    // Filter audio records based on user privilege
+    if ($is_premium_user) {
+        $query = "SELECT id, title, author, is_premium FROM media WHERE type = 'audio' ORDER BY title ASC";
+        $stmt = $conn->prepare($query);
+    } else {
+        $query = "SELECT id, title, author, is_premium FROM media WHERE type = 'audio' AND is_premium = 0 ORDER BY title ASC";
+        $stmt = $conn->prepare($query);
+    }
     $stmt->execute();
     $result = $stmt->get_result();
 } catch (Exception $e) {
@@ -29,63 +37,35 @@ try {
 $active_track_path = '';
 $active_track_name = '';
 
+// Safe playback of active track
 if (isset($_GET['play_id'])) {
     $target_id = (int)$GET['play_id'];
     
-    // Parameterized lookup to secure track path definition
-    $track_stmt = $conn->prepare("SELECT track_name, file_path FROM audio_tracks WHERE id = ?");
-    $track_stmt->bind_param("i", $target_id);
+    // check the specific file including the role logic
+    if ($is_premium_user) {
+        $track_stmt = $conn->prepare("SELECT title, content, is_premium FROM media WHERE id = ? AND type = 'audio'");
+        $track_stmt->bind_param("i", $target_id);
+    } else {
+        $track_stmt = $conn->prepare("SELECT title, content, is_premium FROM media WHERE id = ? AND type = 'audio' AND is_premium = 0");
+        $track_stmt->bind_param("i", $target_id);
+    }
+    
     $track_stmt->execute();
     $track_res = $track_stmt->get_result()->fetch_assoc();
     $track_stmt->close();
     
     if ($track_res) {
         // The database must store only the file name (e.g., "song1.mp3"). We hardcode the folder directory path prefix on the server. This neutralizes Path Traversal (../../etc/passwd)
-        $safe_filename = basename($track_res['file_path']); 
+        $safe_filename = basename($track_res['content']); 
         $active_track_path = "uploads/audio/" . $safe_filename;
-        $active_track_name = $track_res['track_name'];
+        $active_track_name = $track_res['title'];
+    } else {
+        // If a standard user tries to brute force the ID of a premium file via a parameterized URL, we intercept the IDOR attack.
+        $securityLogger->warning("BOLA/IDOR attempt intercepted: User tried to access unauthorized premium audio", ["user_id" => $_SESSION['user_id'], "attempted_track_id" => $target_id]);
+        echo "<p style='color: red; font-weight: bold;'>Security Error: Unauthorized media asset request.</p>";
     }
 }
 ?>
-
-<style>
-    .audio-split-container {
-        display: flex;
-        gap: 20px;
-        margin-top: 15px;
-    }
-    .audio-list-panel {
-        flex: 1;
-        max-height: 300px;
-        overflow-y: auto; /* Scrollbar requirement */
-        border: 1px solid #def2f1;
-        border-radius: 6px;
-        padding: 10px;
-        background: #fdfdfd;
-    }
-    .audio-player-panel {
-        flex: 1;
-        background-color: #feffff;
-        border: 2px dashed #3aafa9;
-        border-radius: 6px;
-        padding: 20px;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-    }
-    .track-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 10px;
-        border-bottom: 1px solid #f0f0f0;
-        transition: background 0.2s;
-    }
-    .track-item:hover { background-color: #f4f6f9; }
-    .track-item.playing { background-color: #def2f1; font-weight: bold; }
-    .audio-element { width: 100%; margin-top: 15px; }
-</style>
 
 <h3>Audio Streaming Vault</h3>
 <p>Select a track from the scrollable console panel to launch the streaming subsystem container.</p>
@@ -96,12 +76,13 @@ if (isset($_GET['play_id'])) {
             <p style="text-align: center; margin-top: 100px; color: #7f8c8d;">No audio tracks found.</p>
         <?php else: ?>
             <?php while ($track = $result->fetch_assoc()): ?>
-                <?php 
-                    $is_playing = isset($target_id) && ($target_id === (int)$track['id']);
-                ?>
+                <?php $is_playing = isset($target_id) && ($target_id === (int)$track['id']); ?>
                 <div class="track-item <?php echo $is_playing ? 'playing' : ''; ?>">
                     <div>
-                        <span><?php echo htmlspecialchars($track['track_name'], ENT_QUOTES, 'UTF-8'); ?></span>
+                        <span>
+                            <?php echo htmlspecialchars($track['track_name'], ENT_QUOTES, 'UTF-8'); ?>
+                            <?php echo $track['is_premium'] ? ' <span class="badge-file-premium">PREMIUM</span>' : ''; ?>
+                        </span>
                         <br><small style="color: #7f8c8d;">Duration: <?php echo htmlspecialchars($track['duration'], ENT_QUOTES, 'UTF-8'); ?></small>
                     </div>
                     <a href="dashboard.php?view=audio&play_id=<?php echo (int)$track['id']; ?>" class="page-link" style="font-size: 12px;">
@@ -128,6 +109,4 @@ if (isset($_GET['play_id'])) {
     </div>
 </div>
 
-<?php
-$stmt->close();
-?>
+<?php $stmt->close(); ?>

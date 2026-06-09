@@ -85,6 +85,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $media_id = $conn->insert_id;
                     $accessLogger->info("New lyrics uploaded successfully", ["user_id" => $user_id, "media_id" => $media_id]);	// access log, operation success
                     $message = "Lyrics added successfully!";
+                    $stmt->close();
+                    
+                    header("Location: upload.php?status=success");
+                    exit();
                 } else {
                     // 1062 error specific management (duplicate entry)
 		    if ($conn->errno === 1062) {
@@ -154,6 +158,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 $media_id = $conn->insert_id;
                                 $accessLogger->info("New audio file uploaded successfully", ["user_id" => $user_id, "media_id" => $media_id]);	// log for successful file upload
                                 $message = "Audio track uploaded successfully!";
+                                
+                                $stmt->close();
+                    
+		                header("Location: upload.php?status=success");
+		                exit();
                             } else {
                                 // rollback local file storage if database transaction fails
                                 if (file_exists($destination_path)) {
@@ -239,6 +248,12 @@ $safe_username = htmlspecialchars($_SESSION['username'] ?? 'User', ENT_QUOTES, '
         </div>
 
         <div id="lyrics_section" class="upload-panel active">
+            <?php if (isset($_GET['status']) && $_GET['status'] === 'success'): ?>
+                <div style="background-color: #d4edda; color: #155724; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+            	    <strong>Success!</strong> Content uploaded successfully. You can now make another upload.
+        	</div>
+    	    <?php endif; ?>
+        
             <form method="POST" action="upload.php">
                 <input type="hidden" name="upload_type" value="lyrics">
                 <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">

@@ -16,6 +16,10 @@ global $conn, $securityLogger;
 
 $search_query = $_GET['query'] ?? '';		// content and query extraction. We grab the search string (already sanitized as basic text by the dashboard controller)
 
+// Extract premium permissions from the session set in the parent controller
+$user_role = $_SESSION['role'] ?? 'standard';
+$is_premium_user = ($user_role === 'premium');
+
 // Determine the search context (defaults to 'lyrics' if missing or tampered with)
 $search_context = $_GET['view'] ?? 'lyrics'; 
 if (!in_array($search_context, ['lyrics', 'audio', 'search'])) {
@@ -33,7 +37,7 @@ if (empty($search_query)) {
     return;
 }
 
-// 3. SECURE PARAMETERIZED DATABASE EXECUTION
+// secure parameterized DB execution
 $results = [];
 
 try {
@@ -43,27 +47,32 @@ try {
 
     if ($search_context === 'audio') {
         // Search inside audio tracks
-        $query = "SELECT id, track_name AS title, duration AS extra_info, 'audio' AS type 
-                  FROM audio_tracks 
-                  WHERE track_name LIKE ? 
-                  ORDER BY track_name ASC LIMIT 20";
+        if ($is_premium_user) {
+            // A premium user can find all audio tracks in search
+            $query = "SELECT id, title, author AS extra_info, is_premium, 'audio' AS type FROM media WHERE type = 'audio' AND (title LIKE ? OR author LIKE ?) ORDER BY title ASC LIMIT 20";
+            $stmt = $conn->prepare($query);
+            $stmt->bind_param("ss", $like_param, $like_param);
+        } else {
+            // A non-premium user cannot find premium audio tracks in search
+            $query = "SELECT id, title, author AS extra_info, is_premium, 'audio' AS type FROM media WHERE type = 'audio' AND (title LIKE ? OR author LIKE ?) AND is_premium = 0 ORDER BY title ASC LIMIT 20";
+            $stmt = $conn->prepare($query);
+            $stmt->bind_param("ss", $like_param, $like_param);
+        }
     } else {
         // Search inside lyrics repository (Default)
-        $query = "SELECT id, title, artist AS extra_info, 'lyrics' AS type 
-                  FROM lyrics 
-                  WHERE title LIKE ? OR artist LIKE ? 
-                  ORDER BY title ASC LIMIT 20";
+        if ($is_premium_user) {
+            // A premium user can find all lyrics in search
+            $query = "SELECT id, title, author AS extra_info, is_premium, 'lyrics' AS type FROM media WHERE type = 'lyrics' AND (title LIKE ? OR author LIKE ?) ORDER BY title ASC LIMIT 20";
+            $stmt = $conn->prepare($query);
+            $stmt->bind_param("ss", $like_param, $like_param);
+        } else {
+            // A non-premium user cannot find premium lrics in search
+            $query = "SELECT id, title, author AS extra_info, is_premium, 'lyrics' AS type FROM media WHERE type = 'lyrics' AND (title LIKE ? OR author LIKE ?) AND is_premium = 0 ORDER BY title ASC LIMIT 20";
+            $stmt = $conn->prepare($query);
+            $stmt->bind_param("ss", $like_param, $like_param);
+        }
     }
 
-    $stmt = $conn->prepare($query);
-    
-    // Dynamically bind parameters based on the query structure
-    if ($search_context === 'audio') {
-        $stmt->bind_param("s", $like_param);
-    } else {
-        $stmt->bind_param("ss", $like_param, $like_param);
-    }
-    
     $stmt->execute();
     $res = $stmt->get_result();
     // get all the results
@@ -80,42 +89,6 @@ try {
 }
 ?>
 
-<style>
-    .search-meta-info {
-        margin-bottom: 20px;
-        color: #555;
-        font-size: 15px;
-    }
-    .search-results-list {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-    }
-    .search-result-item {
-        padding: 15px;
-        border: 1px solid #def2f1;
-        border-radius: 6px;
-        margin-bottom: 10px;
-        background-color: #fdfdfd;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        transition: background 0.2s;
-    }
-    .search-result-item:hover {
-        background-color: #f4f6f9;
-        border-color: #3aafa9;
-    }
-    .result-title {
-        font-weight: bold;
-        color: #17252a;
-    }
-    .result-sub {
-        font-size: 13px;
-        color: #7f8c8d;
-    }
-</style>
-
 <div class="search-meta-info">
     Search results for: <strong>"<?php echo htmlspecialchars($search_query, ENT_QUOTES, 'UTF-8'); ?>"</strong> 
     inside <strong><?php echo htmlspecialchars(strtoupper($search_context), ENT_QUOTES, 'UTF-8'); ?></strong>
@@ -130,7 +103,10 @@ try {
         <?php foreach ($results as $item): ?>
             <li class="search-result-item">
                 <div>
-                    <span class="result-title"><?php echo htmlspecialchars($item['title'], ENT_QUOTES, 'UTF-8'); ?></span>
+                    <span class="result-title">
+                        <?php echo htmlspecialchars($item['title'], ENT_QUOTES, 'UTF-8'); ?>
+                        <?php echo $item['is_premium'] ? ' <span class="badge-file-premium">PREMIUM</span>' : ''; ?>
+                    </span>
                     <br>
                     <span class="result-sub">
                         <?php echo $item['type'] === 'audio' ? 'Duration: ' : 'Artist: '; ?>
