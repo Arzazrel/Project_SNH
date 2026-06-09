@@ -37,6 +37,18 @@ class Database {
             
             // Set charset to utf8mb4 for full Unicode support and security -> Explicitly setting the character set prevents attacks based on character encoding.
             $this->conn->set_charset("utf8mb4");
+            
+            // use a try-catch to prevent MySQL server configuration issues from crashing the entire app
+            try {
+                // Force MySQL to use the Italian (Europe/Rome) time zone for the current session
+	    $this->conn->query("SET time_zone = '+02:00';");
+            } catch (Exception $e) {
+                global $errorLogger;
+                if ($errorLogger) {
+                    $errorLogger->warning("Failed to set MySQL session time_zone", ["error" => $e->getMessage()]);	// write in error log
+                }
+            }
+            
         }
     }
 
