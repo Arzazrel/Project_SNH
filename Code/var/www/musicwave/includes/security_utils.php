@@ -99,17 +99,17 @@ class SecurityUtils {
 	    $securityLogger->warning("Password validation failed: invalid length", ["length" => $length, "ip" => $_SERVER['REMOTE_ADDR']]);
 	    return false;
 	}
-	    /*
-	    // Regex for password complexity check
-	    // (?=.*[a-z]) -> at least a lower case
-	    // (?=.*[A-Z]) -> at least an upper case
-	    // (?=.*\d)    -> at least one number
-	    // (?=.*[\W_]) -> at least an special char (non alfanumerico)
-	    if (!preg_match('/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).+$/', $password)) {
-		global $securityLogger;
-		$securityLogger->warning("Password validation failed: weak complexity");
-		return false;
-	    }*/
+	    
+	// Regex for password complexity check
+	// (?=.*[a-z]) -> at least a lower case
+	// (?=.*[A-Z]) -> at least an upper case
+	// (?=.*\d)    -> at least one number
+	// (?=.*[\W_]) -> at least an special char (non alfanumerico)
+	if (!preg_match('/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).+$/', $password)) {
+	    global $securityLogger;
+	    $securityLogger->warning("Password validation failed: weak complexity");
+	    return false;
+	}
 
     	return true; // La password è valida
     }

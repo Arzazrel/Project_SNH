@@ -9,11 +9,11 @@ CREATE TABLE IF NOT EXISTS users (
     password_hash VARCHAR(255) NOT NULL,
     email VARCHAR(100) NOT NULL UNIQUE,
     role ENUM('standard', 'premium', 'admin') DEFAULT 'standard',
-    status ENUM('pending', 'confirmed') DEFAULT 'pending',          -- activation status
+    status ENUM('pending', 'active') DEFAULT 'pending',             -- activation status
     activation_token VARCHAR(64) DEFAULT NULL,                      -- single use secret
     activation_expires TIMESTAMP NULL DEFAULT NULL,                 -- Activation token expiration
-    reset_token VARCHAR(64) DEFAULT NULL,
-    reset_token_expiration TIMESTAMP NULL DEFAULT NULL,
+    token_reset_hash VARCHAR(64) DEFAULT NULL,
+    reset_expires_at TIMESTAMP NULL DEFAULT NULL,
     login_attempts INT DEFAULT 0,
     lock_until TIMESTAMP NULL DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -36,17 +36,6 @@ CREATE TABLE IF NOT EXISTS media (
 
 ALTER TABLE media ADD CONSTRAINT unique_song_lyrics UNIQUE (title, author);	-- to prevent duplicate
 
--- Audit Logs table for post-incident investigation
-CREATE TABLE IF NOT EXISTS audit_logs (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT DEFAULT NULL,
-    ip_address VARCHAR(45) NOT NULL,
-    user_agent TEXT,
-    severity ENUM('info', 'warning', 'critical') DEFAULT 'info',
-    action VARCHAR(255) NOT NULL,
-    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
 -- Table optimized for IP-based rate limiting (used to limit registration requests)
 CREATE TABLE IF NOT EXISTS rate_limits (
     ip_address VARCHAR(45) NOT NULL,
@@ -58,9 +47,9 @@ CREATE TABLE IF NOT EXISTS rate_limits (
 -- Entering test users (Passwords: 'admin', 'user', 'prem_user')
 -- Hashes are generated with BCRYPT (PASSWORD_DEFAULT in PHP)
 INSERT INTO users (username, password_hash, email, role, status) VALUES 
-('admin', '$2y$10$I1Stow1gg43UQGF9cL9msuL/ofR6GTmmsGbMp4p9J3zbssr8YmTEK', 'admin@musicwave.it', 'admin', 'confirmed'),
-('user', '$2y$10$6gdXg2PPHubCSh2VqD0mT.yUtDF1dn6wi8T/aFTpIZxwIVmFVkQZ2', 'user@musicwave.it', 'standard', 'confirmed'),
-('prem_user', '$2y$10$AQ7xugkO8XtX3GigSjcl4.27wvPVtM7H6mFy79HibrCHD3o6F2Cai', 'premium@musicwave.it', 'premium', 'confirmed');
+('admin', '$2y$10$I1Stow1gg43UQGF9cL9msuL/ofR6GTmmsGbMp4p9J3zbssr8YmTEK', 'admin@musicwave.it', 'admin', 'active'),
+('user', '$2y$10$6gdXg2PPHubCSh2VqD0mT.yUtDF1dn6wi8T/aFTpIZxwIVmFVkQZ2', 'user@musicwave.it', 'standard', 'active'),
+('prem_user', '$2y$10$AQ7xugkO8XtX3GigSjcl4.27wvPVtM7H6mFy79HibrCHD3o6F2Cai', 'premium@musicwave.it', 'premium', 'active');
 
 -- Create a dedicated user with limited privileges
 -- In a real scenario, change 'StrongPassword123!' to a secure secret

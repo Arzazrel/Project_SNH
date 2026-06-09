@@ -10,7 +10,6 @@ require_once DIR_INCLUDES . 'logger_setup.php';
 require_once DIR_INCLUDES . 'security_utils.php';
 // We include Composer's central autoloader (automatically loads Monolog and PHPMailer)
 require_once DIR_VENDOR . 'autoload.php';
-
 // import the necessary namespaces for PHPMailer
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
@@ -79,7 +78,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $message = "Username must be between 3 and 20 characters and contain only letters, numbers, or underscores.";
         $error = true;
     } elseif (!$password_valid) {
-        $message = "Password must be between 8 and 72 characters long.";
+        $message = "Password does not meet complexity requirements (Min 8 chars, max 72 chars, 1 uppercase, 1 lowercase, 1 number).";
         $error = true;
     } elseif ($password !== $confirm_password) {
         $message = "Passwords do not match.";
@@ -114,7 +113,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             	// sending real email with PHPmailer via secure SMTP
             	$mail = new PHPMailer(true);
                 try {
-                    // Configurazione del Server SMTP (Costanti definite in db_config.php)
+                    // SMTP Server Configuration (Constants defined in db_config.php)
                     $mail->isSMTP();
                     $mail->Host       = SMTP_HOST;
                     $mail->SMTPAuth   = true;
@@ -123,15 +122,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
                     $mail->Port       = SMTP_PORT;
 
-                    // Mittente e Destinatario
+                    // Sender and Recipient
                     $mail->setFrom(SMTP_USER, MAIL_FROM_NAME);
                     $mail->addAddress($email, $username);
 
-                    // Contenuto dell'email
+                    // Email content
                     $mail->isHTML(true);
                     $mail->Subject = 'Verify your MusicWave Account';
                     
-                    // Link di attivazione puntato alla pagina pubblica verify.php
+                    // Activation link points to the public verify.php page
                     $activation_link = BASE_URL . "public/verify.php?token=" . $activation_token;
                     
                     $mail->Body    = "<h1>Welcome to MusicWave, " . htmlspecialchars($username) . "!</h1>

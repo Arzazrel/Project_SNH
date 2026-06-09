@@ -80,8 +80,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $expiry = (new DateTime())->modify('+15 minutes')->format('Y-m-d H:i:s');
 
             // Saving token hash and expiration to DB
-            $update_stmt = $conn->prepare("UPDATE users SET password_reset_hash = ?, reset_expires_at = ? WHERE id = ?");
-            $update_stmt->bind_param("ssi", $token_hash, $expiry, $user['user_id']);
+            $update_stmt = $conn->prepare("UPDATE users SET token_reset_hash = ?, reset_expires_at = ? WHERE id = ?");
+            $update_stmt->bind_param("ssi", $token_hash, $expiry, $user['id']);
             $update_stmt->execute();
             $update_stmt->close();
 
