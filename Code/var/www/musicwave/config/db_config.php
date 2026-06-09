@@ -53,8 +53,8 @@ define('MAX_AUDIO_FILE_SIZE', 10485760);     	// 10 Megabytes in bytes (10 * 102
  */
 define('SMTP_HOST', 'smtp.gmail.com');
 define('SMTP_PORT', 587); 				// standard port for TLS
-define('SMTP_USER', 'project_SNH_26@gmail.com');
-define('SMTP_PASS', 'wjts olvw oeeu ubmg'); 		// google account app password
+define('SMTP_USER', 'project.SNH.26@gmail.com');
+define('SMTP_PASS', 'wjtsolvwoeeuubmg'); 		// google account app password
 define('MAIL_FROM_NAME', 'MusicWave Security Team');
-define('BASE_URL', DIR_BASE);				
+define('BASE_URL', 'https://localhost/');				
 ?>

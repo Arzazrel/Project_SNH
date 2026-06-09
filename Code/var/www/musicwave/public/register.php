@@ -113,6 +113,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             	// sending real email with PHPmailer via secure SMTP
             	$mail = new PHPMailer(true);
                 try {
+                    //$mail->SMTPDebug = 2; 		// to debug
+                
                     // SMTP Server Configuration (Constants defined in db_config.php)
                     $mail->isSMTP();
                     $mail->Host       = SMTP_HOST;
@@ -131,7 +133,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $mail->Subject = 'Verify your MusicWave Account';
                     
                     // Activation link points to the public verify.php page
-                    $activation_link = BASE_URL . "public/verify.php?token=" . $activation_token;
+                    $activation_link = "http://" . $_SERVER['HTTP_HOST'] . "/verify.php?token=" . $activation_token;
                     
                     $mail->Body    = "<h1>Welcome to MusicWave, " . htmlspecialchars($username) . "!</h1>
                                       <p>Please click the button below to verify your email address and activate your account:</p>
@@ -166,6 +168,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $error = true;
                 }
             } else {
+            	global $errorLogger;
                 $errorLogger->error("Failed to insert user into DB", ["error" => $conn->error]);		// write log
                 $message = "A technical error occurred.";
                 $error = true;

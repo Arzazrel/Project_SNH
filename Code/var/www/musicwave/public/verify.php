@@ -8,6 +8,7 @@ require_once __DIR__ . '/../config/db_config.php';
 require_once DIR_INCLUDES . 'db_connect.php';
 require_once DIR_INCLUDES . 'logger_setup.php';
 require_once DIR_INCLUDES . 'security_utils.php';
+require_once DIR_VENDOR . 'autoload.php';
 
 SecurityUtils::startSecureSession();
 SecurityUtils::sendSecurityHeaders();
@@ -44,13 +45,15 @@ if (empty($token) || !preg_match('/^[a-f0-9]{64}$/i', $token)) {
         $username = $user['username'];
 
         // Activates the user's account, canceling the token (making it disposable)
-        $update_stmt = $conn->prepare("UPDATE users SET status = 'confirmed', activation_token = NULL, activation_expires = NULL WHERE id = ?");
+        $update_stmt = $conn->prepare("UPDATE users SET status = 'active', activation_token = NULL, activation_expires = NULL WHERE id = ?");
         $update_stmt->bind_param("i", $user_id);
         
         if ($update_stmt->execute()) {
+            global $accessLogger;
             $accessLogger->info("User email successfully verified and account activated", ["username" => $username, "user_id" => $user_id]);	// write access log
             $message = "Thank you, " . htmlspecialchars($username) . "! Your email has been verified. You can now log in.";
         } else {
+            global $errorLogger;
             $errorLogger->error("Failed to update status for user during email verification", ["user_id" => $user_id]);				// write error log
             $message = "A technical database error occurred during activation. Please contact support.";
             $error = true;
@@ -58,6 +61,7 @@ if (empty($token) || !preg_match('/^[a-f0-9]{64}$/i', $token)) {
         $update_stmt->close();
     } else {
         // Failed, invalid/expired token"
+        global $securityLogger;
         $securityLogger->warning("Failed email activation attempt with invalid/expired token", ["token" => $token, "ip" => $_SERVER['REMOTE_ADDR']]);
         $message = "The activation link is invalid, has already been used, or has expired (validity is 24 hours). Please register again.";
         $error = true;

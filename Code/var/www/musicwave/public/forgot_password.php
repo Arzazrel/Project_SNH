@@ -106,7 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $mail->Subject = "Password recover- MusicWave";
                     
                 // build the secure link that points to reset_password.php
-            	$reset_link = "https://" . $_SERVER['HTTP_HOST'] . "/reset_password.php?token=" . $token_raw;
+            	$reset_link = "http://" . $_SERVER['HTTP_HOST'] . "/reset_password.php?token=" . $token_raw;
        
             	$mail->Body = "Hello " . htmlspecialchars($user['username']) . ",\n\n" .
                               "You have requested a password reset on MusicWave.\n" .
