@@ -14,7 +14,7 @@ require_once DIR_VENDOR . 'autoload.php';
 SecurityUtils::startSecureSession();		// start secure session
 
 // Role Check - We verify that the user is logged in AND that his role in the session is strictly 'admin'
-if (!isset($_SESSION['user_id']) || !isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'admin') {
+if (!isset($_SESSION['user_id']) || !isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
     global $securityLogger;
     $securityLogger->warning("Unauthorized access attempt to admin dashboard", ["user_id" => $_SESSION['user_id'] ?? 'ANONYMOUS',"ip" => $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN']);	// write security log
     header("HTTP/1.1 403 Forbidden");								// redirect page

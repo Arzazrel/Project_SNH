@@ -6,8 +6,8 @@
  * Parameterized SQL queries (Anti-SQLi), and strict Output Encoding (Anti-XSS).
  */
 
-// Prevent direct file access. 
-if (!isset($_SESSION['user_id']) || !defined('DIR_MODULES')) {
+// Prevent direct file access. Check DIR_PUBLIC because it's defined in db_config.php. db_config.php is included only by the main application (dashboard.php).
+if (!isset($_SESSION['user_id']) || !defined('DIR_PUBLIC')) {
     header("HTTP/1.1 403 Forbidden");
     exit("Direct access denied.");
 }

@@ -62,7 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         
         // Database operation with Prepared Statements, we fetch the password hash and lockout details
-        $stmt = $conn->prepare("SELECT id, username, password_hash, status, login_attempts, lock_until FROM users WHERE email = ?");	// prepared query
+        $stmt = $conn->prepare("SELECT id, username, password_hash, status, login_attempts, lock_until, role FROM users WHERE email = ?");	// prepared query
         $stmt->bind_param("s", $email);			// put username into prepared query
         $stmt->execute();				// execute the query
         $result = $stmt->get_result();			// get results
@@ -104,14 +104,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 		        $reset_stmt->close();
 
 		        $_SESSION['user_id'] = $user['id'];		// set user_id
-		        $_SESSION['email'] = $email;		// set email
+		        $_SESSION['email'] = $email;			// set email
 		        $_SESSION['username'] = $user['username'];	// set username
 		        $_SESSION['last_access'] = time(); 		// set initial time for timeout tracking
-		            
-		        $accessLogger->info("User logged in successfully", ["user_id" => $user['id'], "email" => $email]);		// write log
+		        $_SESSION['role'] = $user['role'];		// set the role of the user ('standard' or 'premium' or 'admin')
 		           
-		        header("Location: dashboard.php");	// redirect to user page
-		        exit();
+		        // role-basedrouting control
+		        if ($_SESSION['role'] === 'admin') {
+			    $securityLogger->info("Admin user logged in, redirecting to admin dashboard", ["user_id" => $user['id'], "email" => $email]);		// write log
+			    header("Location: admin_dashboard.php");
+			    exit();
+			} else {
+			    $securityLogger->info("Standard/Premium user logged in, redirecting to user dashboard", ["user_id" => $user['id'], "email" => $email]);	// write log
+			    header("Location: dashboard.php");
+			    exit();
+			}
 		    }
                 } 		// - end - if 0.1.1 - [correct password]
                 // - start - esle 0.1.1 - [not correct password]

@@ -6,6 +6,7 @@
 
 // Load configuration and dependencies
 require_once __DIR__ . '/../config/db_config.php';
+require_once DIR_INCLUDES . 'db_connect.php';
 require_once DIR_INCLUDES . 'logger_setup.php';
 require_once DIR_INCLUDES . 'security_utils.php';
 
@@ -110,18 +111,16 @@ $safe_role = htmlspecialchars(strtoupper($user_role), ENT_QUOTES, 'UTF-8');
         <?php
         switch ($current_view) {
             case 'lyrics':
-                echo "<h3>Section Lyrics</h3>";
-                include DIR_MODULES . 'lyrics_panel.php'; 
+                include DIR_PUBLIC . 'lyrics_panel.php'; 
                 break;
                 
             case 'audio':
-                echo "<h3>Section Audio</h3>";
-                include DIR_MODULES . 'audio_panel.php'; 
+                include DIR_PUBLIC . 'audio_panel.php'; 
                 break;
                 
             case 'search':
                 echo "<h3>Searcj results</h3><p>Search panel loaded! You searched for: <strong>" . htmlspecialchars($search_query, ENT_QUOTES, 'UTF-8') . "</strong></p>";
-                include DIR_MODULES . 'search_results.php';
+                include DIR_PUBLIC . 'search_results.php';
                 break;
                 
             default:
