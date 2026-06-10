@@ -51,6 +51,20 @@ INSERT INTO users (username, password_hash, email, role, status) VALUES
 ('user', '$2y$10$6gdXg2PPHubCSh2VqD0mT.yUtDF1dn6wi8T/aFTpIZxwIVmFVkQZ2', 'user@musicwave.it', 'standard', 'active'),
 ('prem_user', '$2y$10$AQ7xugkO8XtX3GigSjcl4.27wvPVtM7H6mFy79HibrCHD3o6F2Cai', 'premium@musicwave.it', 'premium', 'active');
 
+-- password is: 'PasswordTester2026!'
+INSERT INTO users (username, email, password_hash, status, role) VALUES 
+('tester', 'tester@musicwave.it', '$2y$10$7R4MvEunI9pYbeGq9K3ySeYV1N7rPWhvO26/nN2mSGe28lY4wYRyO', 'active', 'premium');
+
+-- Insert first lyrics (standard, visible to all)
+INSERT INTO media (user_id, title, author, type, content, is_premium, created_at) VALUES 
+(1, 'Lyrics Not Premium', 'The tester', 'lyrics','Walking through the lines of midnight,\nSearching for the bracket that I lost.\nThe server hums a song of daylight,\nCompiling dreams at any cost.\nOh, database, hear my prayer tonight!', 0,'2026-06-09 22:05:00'),
+-- Insert second lyrics (premium, visible only for premium user)
+(1, 'Lyrics Premium', 'The tester', 'lyrics','This is a premium lyrics! Reserved only for upgraded accounts.', 1, '2026-06-09 22:06:00'),
+-- insert first audio (standard, visible to all) - already present in the public/uploads/audio folder
+(1, 'Audio Not Premium', 'The tester', 'audio','uploads/audio/f75f80dfe53d7e7792fe75bfcace5a71_1781039508.mp3', 0, '2026-06-09 22:06:00'),
+-- insert second audio (premium, visible only for premium user) - already present in the public/uploads/audio folder
+(1, 'Audio Premium', 'The tester', 'audio','uploads/audio/903aa2d9fe9f9f32fec8af8879c04ef7_1781039706.mp3', 1, '2026-06-09 22:06:00');
+
 -- Create a dedicated user with limited privileges
 -- In a real scenario, change 'StrongPassword123!' to a secure secret
 CREATE USER IF NOT EXISTS 'musicwave_user'@'localhost' IDENTIFIED BY 'StrongPassword123!';
