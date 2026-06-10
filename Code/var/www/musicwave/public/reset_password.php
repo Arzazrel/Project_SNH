@@ -31,6 +31,8 @@ $token_raw = $_GET['token'] ?? $_POST['token'] ?? '';
 // - 1 - validation of the token -
 if (empty($token_raw) || !preg_match('/^[a-f0-9]{64}$/', $token_raw)) {
     $error_message = "Invalid or expired recovery token.";
+    global $securityLogger;
+    $securityLogger->warning("Password reset invalid or missing activation token.", ["ip" => $_SERVER['REMOTE_ADDR']]);
 } else {
 
     // calculate the SHA-256 hash of the passed token to match with the DB
@@ -109,11 +111,11 @@ $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 <!DOCTYPE html>
 <html lang="it">
 <head>
-    <title>MusicWave - Reimposta Password</title>
+    <title>MusicWave - Reset password</title>
     <meta charset="UTF-8">
 </head>
 <body>
-    <h2>Reimposta la tua Password</h2>
+    <h2>Reset your password</h2>
 
     <?php if ($error_message): ?>
         <p style="color: red; font-weight: bold;"><?php echo htmlspecialchars($error_message); ?></p>
@@ -121,7 +123,7 @@ $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 
     <?php if ($success_message): ?>
         <p style="color: green; font-weight: bold;"><?php echo htmlspecialchars($success_message); ?></p>
-        <p><a href="login.php">Vai alla pagina di Login</a></p>
+        <p><a href="login.php">Go to the Login page</a></p>
     <?php endif; ?>
 
     <?php if ($is_token_valid): ?>
@@ -130,17 +132,17 @@ $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
             <input type="hidden" name="token" value="<?php echo htmlspecialchars($token_raw); ?>">
 
             <div>
-                <label>Nuova Password:</label><br>
+                <label>New Password:</label><br>
                 <input type="password" name="password_new" required minlength="8">
-                <small><br>Minimo 8 caratteri, includere una maiuscola, una minuscola e un numero.</small>
+                <small><br>Minimum 8 characters, include one uppercase letter, one lowercase letter, and one number.</small>
             </div>
             <br>
             <div>
-                <label>Conferma Nuova Password:</label><br>
+                <label>Confirm New Password:</label><br>
                 <input type="password" name="password_confirm" required minlength="8">
             </div>
             <br>
-            <button type="submit">Aggiorna Password</button>
+            <button type="submit">Update Password</button>
         </form>
     <?php endif; ?>
 </body>

@@ -23,6 +23,8 @@ $token = $_GET['token'] ?? '';
 if (empty($token) || !preg_match('/^[a-f0-9]{64}$/i', $token)) {
     $message = "Invalid or missing activation token link.";
     $error = true;
+    global $securityLogger;
+    $securityLogger->warning("Registration verification invalid or missing activation token.", ["ip" => $_SERVER['REMOTE_ADDR']]);
 } else {
 
     // Rate limit control (Prevents CPU-level application DoS/DB queries) use 'validate' action as a shared slot to block IPs abusing authentication/verification endpoints.
