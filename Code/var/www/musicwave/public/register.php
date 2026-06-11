@@ -17,8 +17,8 @@ use PHPMailer\PHPMailer\Exception;
 SecurityUtils::startSecureSession();		// start secure session
 
 // Redirect if the user is already logged in
-if (isset($_SESSION['user_id'])) {
-    header("Location: dashboard.php");		// redirect to main page
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_SESSION['user_id'])) {
+    header("Location: dashboard.php");
     exit();
 }
 
@@ -221,7 +221,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php endif; ?>
 
     <form method="POST" action="register.php" autocomplete="off">
-        <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
+        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">
         
         <div class="form-group">
             <label>Username (Visible to others):</label><br>

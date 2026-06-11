@@ -16,6 +16,14 @@ SecurityUtils::sendSecurityHeaders();
 $message = "";
 $error = false;
 
+// Rate limit control (Prevents CPU-level application DoS/DB queries) use 'validate' action as a shared slot to block IPs abusing authentication/verification endpoints.
+if (!SecurityUtils::checkRateLimit($conn, 'validate')) {
+    global $securityLogger;
+    $securityLogger->warning("Verification DoS block triggered (Rate limit exceeded)", ["ip" => $_SERVER['REMOTE_ADDR']]);
+    header("HTTP/1.1 429 Too Many Requests");
+    exit("Too many verification attempts. Please try again after 15 minutes.");
+}
+
 // Retrieves and syntactically validates the token passed via URL (?token=...)
 $token = $_GET['token'] ?? '';
 
@@ -26,14 +34,6 @@ if (empty($token) || !preg_match('/^[a-f0-9]{64}$/i', $token)) {
     global $securityLogger;
     $securityLogger->warning("Registration verification invalid or missing activation token.", ["ip" => $_SERVER['REMOTE_ADDR']]);
 } else {
-
-    // Rate limit control (Prevents CPU-level application DoS/DB queries) use 'validate' action as a shared slot to block IPs abusing authentication/verification endpoints.
-    if (!SecurityUtils::checkRateLimit($conn, 'validate')) {
-        global $securityLogger;
-        $securityLogger->warning("Verification DoS block triggered (Rate limit exceeded)", ["ip" => $_SERVER['REMOTE_ADDR']]);
-        header("HTTP/1.1 429 Too Many Requests");
-        exit("Too many verification attempts. Please try again after 15 minutes.");
-    }
 
     // Query the database for a user with that specific token and who has not expired
     $stmt = $conn->prepare("SELECT id, username FROM users WHERE activation_token = ? AND status = 'pending' AND activation_expires > NOW()");

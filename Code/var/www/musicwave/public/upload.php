@@ -256,7 +256,7 @@ $safe_username = htmlspecialchars($_SESSION['username'] ?? 'User', ENT_QUOTES, '
         
             <form method="POST" action="upload.php">
                 <input type="hidden" name="upload_type" value="lyrics">
-                <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
+                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">
                 
                 <div class="form-group">
                     <label for="lyrics_title">Song Title</label>
@@ -283,7 +283,7 @@ $safe_username = htmlspecialchars($_SESSION['username'] ?? 'User', ENT_QUOTES, '
         <div id="audio_section" class="upload-panel">
             <form method="POST" action="upload.php" enctype="multipart/form-data">
                 <input type="hidden" name="upload_type" value="audio">
-                <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
+                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">
                 
                 <div class="form-group">
                     <label for="audio_title">Track Title</label>

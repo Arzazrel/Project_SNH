@@ -125,9 +125,9 @@ class SecurityUtils {
         if (session_status() === PHP_SESSION_NONE) {
             // there isn't a session, start a new session -> configuring session cookie parameters
             session_set_cookie_params([
-                'lifetime' => 0,                      // Cookie expires when the browser closes
-                'path' => '/',                        // Valid for the entire application domain
-                'domain' => '',                       // Current host
+                'lifetime' => 0,                      // Cookie expires when the browser closes (only in RAM)
+                'path' => '/',                        // Valid for the entire application domain (in this project /public)
+                'domain' => '',                       // Current host. The browser automatically assigns the cookie to the exact host that served the page (in this project localhost).
                 'secure' => true,                     // to force https only
                 'httponly' => true,                   // Mitigates XSS: Prevents JavaScript from reading the session token
                 'samesite' => 'Strict'                // Mitigates CSRF: Restricts cross-site cookie transmission

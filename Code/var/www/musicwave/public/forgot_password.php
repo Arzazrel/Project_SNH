@@ -18,12 +18,20 @@ use PHPMailer\PHPMailer\Exception;
 SecurityUtils::startSecureSession();		// start secure session
 
 // Redirect if the user is already logged in
-if (isset($_SESSION['user_id'])) {
-    header("Location: dashboard.php");		// redirect to main page
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_SESSION['user_id'])) {
+    header("Location: dashboard.php");
     exit();
 }
 
 SecurityUtils::sendSecurityHeaders();		// security headers
+
+// rate limiting control (Protection against application-level DoS attacks on the CPU and Mail Flooding)
+if (!SecurityUtils::checkRateLimit($conn, 'password_recovery')) {
+    global $securityLogger;
+    $securityLogger->warning("Password recovery DoS block triggered (Rate limit exceeded for IP)", ["ip" => $_SERVER['REMOTE_ADDR']]);
+    header("HTTP/1.1 429 Too Many Requests");							// redirect ot an error page to visualize the attack for the user
+    exit("Too many retrieval requests from this connection. Please try again after 15 minutes.");
+}
 
 // Generate an Anti-CSRF token specifically for the Guest registration form if not already present
 if (empty($_SESSION['csrf_token'])) {
@@ -36,6 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     global $securityLogger;
 
     // check presence and validity of the token. Use of hash_equals to prevent timing attack during string comparision (apply Costant-Time Comparison)
+    // Check CSRF token to prevent cross-origin mail bombing and abuse of the password recovery service.
     if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
         global $securityLogger;
     	$securityLogger->warning("Login CSRF attempt blocked", ["ip" => $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN_IP']);		// write in security log
@@ -43,14 +52,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     	exit("Security Error: Invalid or missing CSRF Token.");
     }
     unset($_SESSION['csrf_token']);		// one-time use-> destroy the token immediately after verification to prevent reuse
-
-    // rate limiting control (Protection against application-level DoS attacks on the CPU and Mail Flooding)
-    if (!SecurityUtils::checkRateLimit($conn, 'password_recovery')) {
-        global $securityLogger;
-        $securityLogger->warning("Password recovery DoS block triggered (Rate limit exceeded for IP)", ["ip" => $_SERVER['REMOTE_ADDR']]);
-        header("HTTP/1.1 429 Too Many Requests");							// redirect ot an error page to visualize the attack for the user
-        exit("Too many retrieval requests from this connection. Please try again after 15 minutes.");
-    }
     
     $email_raw = SecurityUtils::sanitizeInput($_POST['email'] ?? '');	// Sanitize username in input (Null byte removal)
     $email = SecurityUtils::validateEmail($email_raw);
@@ -142,29 +143,150 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 ?>
 
 <!DOCTYPE html>
-<html lang="it">
+<html lang="en">
 <head>
-    <title>MusicWave - Recupero Password</title>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MusicWave - Password Recovery</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #eef2f3;
+            margin: 0;
+            padding: 0;
+            color: #334155;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        .auth-container {
+            background: white;
+            border-radius: 8px;
+            padding: 40px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
+            max-width: 450px;
+            width: 100%;
+            box-sizing: border-box;
+            text-align: center;
+        }
+        .auth-header h2 {
+            margin: 0 0 10px 0;
+            color: #17252a;
+            font-size: 24px;
+            font-weight: 700;
+        }
+        .auth-header p {
+            color: #64748b;
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            text-align: left;
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #475569;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .form-control {
+            width: 100%;
+            padding: 10px 12px;
+            font-size: 14px;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            box-sizing: border-box;
+            color: #0f172a;
+            transition: border-color 0.15s;
+        }
+        .form-control:focus {
+            outline: none;
+            border-color: #3aafa9;
+        }
+        .btn-submit {
+            width: 100%;
+            background-color: #2b7a78;
+            color: white;
+            padding: 12px;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 14px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: background-color 0.15s;
+            letter-spacing: 0.5px;
+            margin-top: 10px;
+        }
+        .btn-submit:hover {
+            background-color: #1a5351;
+        }
+        .alert {
+            padding: 12px 15px;
+            border-radius: 6px;
+            margin-bottom: 25px;
+            font-weight: 500;
+            font-size: 14px;
+            text-align: left;
+            line-height: 1.5;
+        }
+        .alert-info {
+            background: #e0f2fe;
+            border: 1px solid #bae6fd;
+            color: #0369a1;
+        }
+        .footer-links {
+            margin-top: 25px;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 15px;
+            font-size: 13px;
+        }
+        .footer-links a {
+            color: #3aafa9;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .footer-links a:hover {
+            text-decoration: underline;
+            color: #2b7a78;
+        }
+    </style>
 </head>
 <body>
-    <h2>Recupero Password</h2>
-    
-    <?php if ($message): ?>
-        <p style="color: green; font-weight: bold;"><?php echo htmlspecialchars($message); ?></p>
-    <?php endif; ?>
 
-    <form method="POST" action="forgot_password.php">
-        <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
-        
-        <div>
-            <label>Inserisci la tua email di registrazione:</label><br>
-            <input type="email" name="email" required style="width: 250px;">
+    <div class="auth-container">
+        <div class="auth-header">
+            <h2>Recover Password</h2>
+            <p>Provide your account email safety node to receive a temporary validation sequence.</p>
         </div>
-        <br>
-        <button type="submit">Invia link di ripristino</button>
-    </form>
-    <br>
-    <p><a href="login.php">Torna al Login</a></p>
+
+        <?php if ($message): ?>
+            <div class="alert alert-info">
+                <?php echo htmlspecialchars($message); ?>
+            </div>
+        <?php endif; ?>
+
+        <form method="POST" action="forgot_password.php">
+            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">
+            
+            <div class="form-group">
+                <label for="email">Registered Email Address</label>
+                <input type="email" id="email" name="email" class="form-control" placeholder="e.g., name@domain.com" required>
+            </div>
+            
+            <button type="submit" class="btn-submit">Send Reset Link</button>
+        </form>
+
+        <div class="footer-links">
+            <a href="login.php">« Back to Login</a>
+        </div>
+    </div>
+
 </body>
 </html>
