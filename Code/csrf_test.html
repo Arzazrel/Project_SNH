@@ -88,6 +88,17 @@
 		<button type="submit" class="btn-attack">Launch Lyrics CSRF Attack</button>
 	    </form>
 	</div>
+	
+	<div class="test-card">
+            <h3>Scenario 6: Unauthorized Asset Download / Drive-By Resource Drain</h3>
+            <p><strong>Target:</strong> <code>download.php</code> (Method: POST)</p>
+            <p>Attempts to force the victim's browser to download media assets (e.g., ID 1) in the background. It tests if the backend drops the request when the vital anti-CSRF token is omitted.</p>
+            
+            <form id="csrfFormDownload" action="http://localhost/download.php" method="POST" target="_blank">
+                <input type="hidden" name="id" value="1" />
+                <button type="submit" class="btn-attack">Launch Download CSRF Attack</button>
+            </form>
+        </div>
 
     </div>
 
