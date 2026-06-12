@@ -57,6 +57,22 @@ class SecurityUtils {
         }
         return $clean;
     }
+    
+    /**
+     * Whitelist for Title and Author: Letters, numbers, spaces, hyphens, and apostrophes and round brackets only. Intended to allow only characters that make sense for titles and authors.
+     * Specifically excludes semicolons (;), quotes ("), underscores (_), and SQL comments (--) to maintain data hygiene.
+     */
+    public static function validateMeta($string) {
+        $clean = self::sanitizeInput($string);
+    
+        // Allow: letters (a-z, A-Z), numbers (0-9), spaces (\s), apostrophe ('), dash (\-), round brackets ()
+        if (!preg_match("/^(?!.*--)[a-zA-Z0-9\s'\-\(\)]*$/", $clean)) {
+            global $securityLogger;
+            $securityLogger->warning("Suspicious characters detected in lyrics/song metadata", ["input" => $string, "ip" => $_SERVER['REMOTE_ADDR']]);	// write in the log
+        return false;
+    }
+    return $clean;
+}
 
     /**
      * Username validation 
