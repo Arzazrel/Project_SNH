@@ -38,15 +38,24 @@ $user_id = $_SESSION['user_id'];
 // Handle Form Submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
+    // control check in case of huge audio filee
+    if (empty($_POST) && isset($_SERVER['CONTENT_LENGTH']) && $_SERVER['CONTENT_LENGTH'] > 0) {
+        global $errorLogger;
+        $errorLogger->warning("POST request discarded by server due to size limits", ["user_id" => $_SESSION['user_id'] ?? 'ANONYMOUS',"content_length" => $_SERVER['CONTENT_LENGTH']]);	// write lo log
+        $message = "The uploaded file exceeds the maximum server transmission capacity. Maximum allowed size is 10MB. Please try a smaller file.";
+        $error = true;
+    }
+    else{
+
     // check presence and validity of the token. Use of hash_equals to prevent timing attack during string comparision (apply Costant-Time Comparison)
     if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
         global $securityLogger;
-    	$securityLogger->warning("CSRF attack attempt blocked on upload action", ["user_id" => $_SESSION['user_id'] ?? 'ANONYMOUS', "ip" => $_SERVER['REMOTE_ADDR']]);	// write in security log
+    	$securityLogger->warning("CSRF attack attempt blocked on upload action", ["ip" => $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN_IP']);	// write in security log
     	header("HTTP/1.1 403 Forbidden");			// redirect ot an error page to visualize the attack for the user
     	exit("Security Error: Invalid or missing CSRF Token.");
     }
-
-    unset($_SESSION['csrf_token']);		// one-time use-> destroy the token immediately after verification to prevent reuse
+    // regenerate a new anti-CSRF token for the form in case the page is reloaded with errors.
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
     
     // sanitize all the inputs
     $upload_type = SecurityUtils::sanitizeInput($_POST['upload_type'] ?? '');
@@ -62,6 +71,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $message = "Title and Author must not exceed 255 characters.";	// incorrect fields
         $error = true;
     } else {
+    	// Apply strict whitelisting on lyrics and audio titles and authors
+        $validated_title = SecurityUtils::validateMeta($title);
+    	$validated_author = SecurityUtils::validateMeta($author);
+        
+        // titol, author control check anti-injestion
+        if ($validated_title === false || $validated_author === false) {
+            $message = "Invalid characters detected in Title or Author. Only letters, numbers, spaces, hyphens, and apostrophes are allowed.";
+            $error = true;
+        } else { 	
+        // -- start: else control metadati -
         
         // -- CASE: LYRICS INGESTION -- 
         if ($upload_type === 'lyrics') {
@@ -77,32 +96,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 $sanitized_lyrics = SecurityUtils::validateLyrics($lyrics_content);	// Apply security validation filters for lyrics structural anomalies
                 
-                $stmt = $conn->prepare("INSERT INTO media (user_id, title, author, type, content, is_premium) VALUES (?, ?, ?, 'lyrics', ?, ?)");	// insert query
-                $stmt->bind_param("isssi", $user_id, $title, $author, $sanitized_lyrics, $is_premium);
-                
-                // check for execution completion
-                if ($stmt->execute()) {
-                    $media_id = $conn->insert_id;
-                    $accessLogger->info("New lyrics uploaded successfully", ["user_id" => $user_id, "media_id" => $media_id]);	// access log, operation success
-                    $message = "Lyrics added successfully!";
-                    $stmt->close();
+                if ($sanitized_lyrics === false) {
+		    $message = "Invalid characters detected in lyrics. Only standard text and basic punctuation are allowed.";	// write in security log in the validateLyrics function
+		    $error = true;
+		} else {
+		    $stmt = $conn->prepare("INSERT INTO media (user_id, title, author, type, content, is_premium) VALUES (?, ?, ?, 'lyrics', ?, ?)");	// insert query
+		    $stmt->bind_param("isssi", $user_id, $title, $author, $sanitized_lyrics, $is_premium);
+		    
+		    // check for execution completion
+                    if ($stmt->execute()) {
+                        $media_id = $conn->insert_id;
+                        $accessLogger->info("New lyrics uploaded successfully", ["user_id" => $user_id, "media_id" => $media_id]);	// access log, operation success
+                        $message = "Lyrics added successfully!";
+                        $stmt->close();
+                        
+                        // On success, invalidate the token completely for the next request
+                        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
                     
-                    header("Location: upload.php?status=success");
-                    exit();
-                } else {
-                    // 1062 error specific management (duplicate entry)
-		    if ($conn->errno === 1062) {
-			$message = "This exact song title and author combination already exists in our repository.";
-			$error = true;
-		    } else {
-                        $errorLogger->error("Failed to insert lyrics into DB", ["error" => $conn->error, "user_id" => $user_id]);	// error log, operation failure
-                        $message = "A database error occurred while saving the lyrics.";
-                        $error = true;
+                        header("Location: upload.php?status=success");
+                        exit();
+                    } else {
+                        // 1062 error specific management (duplicate entry)
+		        if ($conn->errno === 1062) {
+			    $message = "This exact song title and author combination already exists in our repository.";
+			    $error = true;
+		        } else {
+                            $errorLogger->error("Failed to insert lyrics into DB", ["error" => $conn->error, "user_id" => $user_id]);	// error log, operation failure
+                            $message = "A database error occurred while saving the lyrics.";
+                            $error = true;
+                        }
                     }
-                }
+		}  
             }
         }
-        
         // -- CASE: AUDIO UPLOAD --
         elseif ($upload_type === 'audio') {
             // check if audio file is in request and check if the upload has done correct or not
@@ -118,6 +144,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // check strict Size Constraint (10 Megabytes maximum)
                 if ($file_size > MAX_AUDIO_FILE_SIZE) {
                     $message = "The audio file is too large. Maximum allowed size is 10MB.";
+                    
                     $error = true;
                 } else {
                     // audio type Verification via Magic Bytes (MIME-type check)
@@ -126,17 +153,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     finfo_close($finfo);
                     
                     // set of allowed audio formats (extensions)
-                    $allowed_mimes = [
-                        'audio/mpeg'  => 'mp3',
-                        'audio/ogg'   => 'ogg',
-                        'audio/wav'   => 'wav',
-                        'audio/x-wav' => 'wav'
-                    ];
+                    $allowed_mimes = ['audio/mpeg'  => 'mp3'];
+                        /* Future expansion examples:
+			    'audio/ogg'   => 'ogg',
+			    'audio/wav'   => 'wav',
+			    'audio/x-wav' => 'wav'
+			    */
                     
                     // check if the format is in the allowed format
                     if (!array_key_exists($mime_type, $allowed_mimes)) {
                         $securityLogger->warning("Suspicious file upload blocked: Invalid MIME-type detected", ["user_id" => $user_id, "original_name" => $orig_filename, "detected_mime" => $mime_type]);	// security log, wrong format
-                        $message = "Invalid file format. Only standard MP3, OGG, and WAV files are allowed.";
+                        $message = "Invalid file format. Only standard MP3 files are allowed.";
                         $error = true;
                     } else {
                         $verified_ext = $allowed_mimes[$mime_type];		// get the correct extension mapped from verified MIME-type
@@ -190,7 +217,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $message = "Invalid operational context.";
             $error = true;
         }
+        }	// -- end: else control metadati -
     }
+    }
+}	// -- end: post case --
+
+// If it has reached the end of execution and there was an error (including the post_max_size one)
+if ($error) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
 
 $safe_username = htmlspecialchars($_SESSION['username'] ?? 'User', ENT_QUOTES, 'UTF-8');	// get current username to print in the layout (with XSS prevention)
@@ -297,7 +331,7 @@ $safe_username = htmlspecialchars($_SESSION['username'] ?? 'User', ENT_QUOTES, '
                     <label for="audio_file">Select Audio File</label>
                     <input type="hidden" name="MAX_FILE_SIZE" value="10485760">
                     <input type="file" id="audio_file" name="audio_file" class="form-control" accept="audio/mpeg, audio/ogg, audio/wav" required>
-                    <small style="color:#7f8c8d;">Allowed formats: MP3, OGG, WAV. Max file size configuration limit: 10MB.</small>
+                    <small style="color:#7f8c8d;">Allowed formats: MP3. Max file size configuration limit: 10MB.</small>
                 </div>
                 <div class="form-group">
                     <label>
