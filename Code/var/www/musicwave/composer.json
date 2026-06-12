@@ -1,5 +1,6 @@
 {
     "require": {
-        "monolog/monolog": "^3.10"
+        "monolog/monolog": "^3.10",
+        "phpmailer/phpmailer": "^7.1"
     }
 }
