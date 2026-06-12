@@ -36,6 +36,7 @@ try {
 // secure selection: Identify the active track to stream safely
 $active_track_path = '';
 $active_track_name = '';
+$target_id = 0;
 
 // Safe playback of active track
 if (isset($_GET['play_id'])) {
@@ -65,6 +66,11 @@ if (isset($_GET['play_id'])) {
         echo "<p style='color: red; font-weight: bold;'>Security Error: Unauthorized media asset request.</p>";
     }
 }
+
+// Generate an anti-CSRF token specifically for the download actions if not already initialized in session
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
 ?>
 
 <div style="margin-bottom: 20px;">
@@ -74,7 +80,7 @@ if (isset($_GET['play_id'])) {
 
 <div class="audio-split-container" style="display: flex; gap: 25px; margin-top: 15px;">
     
-    <div class="audio-list-panel" style="flex: 1.2; max-height: 420px; overflow-y: auto; border: 1px solid #cbd5e1; border-radius: 6px; background: white; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);">
+    <div class="audio-list-panel" style="flex: 1.3; max-height: 420px; overflow-y: auto; border: 1px solid #cbd5e1; border-radius: 6px; background: white; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);">
         <?php if ($result->num_rows === 0): ?>
             <div style="text-align: center; padding: 60px 0; color: #64748b;">No audio tracks found in the database.</div>
         <?php else: ?>
@@ -83,7 +89,7 @@ if (isset($_GET['play_id'])) {
             while ($track = $result->fetch_assoc()): 
                 $cnt++;
                 $is_playing = ($target_id === (int)$track['id']);
-                // Colore di sfondo dinamico per lo zebra striping ed evidenziazione traccia in esecuzione
+                // Dynamic background colors for zebra striping and active playback
                 if ($is_playing) {
                     $item_bg = '#def2f1';
                 } else {
@@ -92,24 +98,33 @@ if (isset($_GET['play_id'])) {
                 $border_bottom = ($cnt === $result->num_rows) ? 'none' : '1px solid #e2e8f0';
             ?>
                 <div class="track-item" style="display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; background-color: <?php echo $item_bg; ?>; border-bottom: <?php echo $border_bottom; ?>; transition: background 0.15s;">
-                    <div style="max-width: 75%; overflow: hidden;">
+                    <div style="max-width: 60%; overflow: hidden;">
                         <span style="color: #0f172a; font-weight: 500; font-size: 15px; display: block; text-overflow: ellipsis; white-space: nowrap;">
                             <?php echo htmlspecialchars($track['title'], ENT_QUOTES, 'UTF-8'); ?>
                             <?php echo $track['is_premium'] ? ' <span class="badge-file-premium" style="margin-left: 5px;">PREMIUM</span>' : ''; ?>
                         </span>
                         <span style="color: #64748b; font-size: 12px; margin-top: 2px; display: inline-block;">Author: <?php echo htmlspecialchars($track['author'], ENT_QUOTES, 'UTF-8'); ?></span>
                     </div>
-                    <div>
-                        <a href="dashboard.php?view=audio&play_id=<?php echo (int)$track['id']; ?>" class="page-link" style="font-size: 12px; padding: 5px 12px; border-radius: 4px; display: inline-block; background-color: <?php echo $is_playing ? '#17252a' : '#2b7a78'; ?>;">
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <a href="dashboard.php?view=audio&play_id=<?php echo (int)$track['id']; ?>" style="font-size: 12px; padding: 6px 12px; border-radius: 4px; display: inline-block; text-decoration: none; font-weight: bold; color: white; background-color: <?php echo $is_playing ? '#17252a' : '#2b7a78'; ?>;">
                             <?php echo $is_playing ? 'Playing' : 'Stream'; ?>
                         </a>
+                        
+                        <form method="POST" action="download.php" target="download_container" style="margin: 0; display: inline;">
+                            <input type="hidden" name="id" value="<?php echo (int)$track['id']; ?>">
+                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">
+                            
+                            <button type="submit" style="font-size: 12px; padding: 6px 12px; border-radius: 4px; border: none; font-weight: bold; color: white; background-color: #f39c12; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.backgroundColor='#d35400'" onmouseout="this.style.backgroundColor='#f39c12'">
+                                Download
+                            </button>
+                        </form>
                     </div>
                 </div>
             <?php endwhile; ?>
         <?php endif; ?>
     </div>
 
-    <div class="audio-player-panel" style="flex: 0.8; background: #f8fafc; padding: 30px; border-radius: 6px; display: flex; flex-direction: column; justify-content: center; align-items: center; border: 1px solid #cbd5e1; min-height: 200px;">
+    <div class="audio-player-panel" style="flex: 0.7; background: #f8fafc; padding: 30px; border-radius: 6px; display: flex; flex-direction: column; justify-content: center; align-items: center; border: 1px solid #cbd5e1; min-height: 200px;">
         <?php if (!empty($active_track_path)): ?>
             <div style="text-align: center; width: 100%;">
                 <div style="background: #3aafa9; color: white; display: inline-block; padding: 4px 10px; font-size: 11px; font-weight: bold; border-radius: 12px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em;">
@@ -141,5 +156,6 @@ if (isset($_GET['play_id'])) {
         <?php endif; ?>
     </div>
 </div>
-
+<!-- iframe for download that doesn't change page but stays in the background -->
+<iframe name="download_container" style="display:none; width:0; height:0; border:none;"></iframe>
 <?php $stmt->close(); ?>
