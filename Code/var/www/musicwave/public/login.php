@@ -40,7 +40,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     	header("HTTP/1.1 403 Forbidden");			// redirect ot an error page to visualize the attack for the user
     	exit("Security Error: Invalid or missing CSRF Token.");
     }
-    unset($_SESSION['csrf_token']);		// one-time use-> destroy the token immediately after verification to prevent reuse
+    // regenerate a new anti-CSRF token for the form in case the page is reloaded with errors.
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
     
     // rate limiting control (Protection against application-level DoS attacks on the CPU and Mail Flooding)
     if (!SecurityUtils::checkRateLimit($conn, 'login')) {
@@ -157,9 +158,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             password_verify($password_raw, $dummy_hash);	// ANTI-TIMING PROTECTION: run a dummy BCRYPT to simulate password checking time
         }		// - end - else 0 - [user not found]
     }
-    
-    // regenerate a new anti-CSRF token for the form in case the page is reloaded with errors.
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
 ?>
 
