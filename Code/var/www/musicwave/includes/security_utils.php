@@ -35,8 +35,10 @@ class SecurityUtils {
      * Prevents Null Byte Injection attacks.
      */
     public static function sanitizeInput($data) {
-        if (is_array($data)) {
-            return array_map([self::class, 'sanitizeInput'], $data);
+        
+        // forces input to be treated as a string if it was accidentally not.
+        if (!is_string($data)) {
+            return '';
         }
         // Remove Null Byte (0x00)
         $data = str_replace(chr(0), '', $data);
@@ -48,11 +50,18 @@ class SecurityUtils {
      * Logs a warning if illegal characters are detected.
      */
     public static function validateLyrics($text) {
+        // blocks anomalies such as Array Injection
+        if (!is_string($text)) {
+	    global $securityLogger;
+	    $securityLogger->warning("Array injection detected in lyrics field", ["ip" => $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN_IP', "user" => $_SESSION['username'] ?? 'UNKNOWN']);	// write into the log
+	    return false; 
+	}
+    
         $clean = self::sanitizeInput($text);
         // RegEx whitelist
         if (!preg_match("/^[a-zA-Z0-9\s\.,!\?'\-]*$/", $clean)) {
             global $securityLogger;
-            $securityLogger->warning("Illegal characters detected in lyrics", ["input" => $text, "ip" => $_SERVER['REMOTE_ADDR']]);
+            $securityLogger->warning("Illegal characters detected in lyrics", ["input" => substr($clean, 0, 100), "ip" => $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN_IP', "user" => $_SESSION['username'] ?? 'UNKNOWN']);
             return false; 
         }
         return $clean;
@@ -63,29 +72,42 @@ class SecurityUtils {
      * Specifically excludes semicolons (;), quotes ("), underscores (_), and SQL comments (--) to maintain data hygiene.
      */
     public static function validateMeta($string) {
+        // blocks anomalies such as Array Injection
+        if (!is_string($string)) {
+	    global $securityLogger;
+	    $securityLogger->warning("Array injection detected in lyrics/song metadata", ["ip" => $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN_IP', "user" => $_SESSION['username'] ?? 'UNKNOWN']);	// write into the log
+	    return false; 
+	}
+        
         $clean = self::sanitizeInput($string);
-    
-        // Allow: letters (a-z, A-Z), numbers (0-9), spaces (\s), apostrophe ('), dash (\-), round brackets ()
+        // allow: letters (a-z, A-Z), numbers (0-9), spaces (\s), apostrophe ('), dash (\-), round brackets ()
         if (!preg_match("/^(?!.*--)[a-zA-Z0-9\s'\-\(\)]*$/", $clean)) {
             global $securityLogger;
-            $securityLogger->warning("Suspicious characters detected in lyrics/song metadata", ["input" => $string, "ip" => $_SERVER['REMOTE_ADDR']]);	// write in the log
-        return false;
+            $securityLogger->warning("Suspicious characters detected in lyrics/song metadata", ["input" => substr($clean, 0, 30), "ip" => $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN_IP', "user" => $_SESSION['username'] ?? 'UNKNOWN']);	// write in the log
+            return false;
+        }
+        return $clean;
     }
-    return $clean;
-}
 
     /**
      * Username validation 
      */
     public static function validateUsername($username) {
+        // blocks anomalies such as Array Injection
+        if (!is_string($username)) {
+	    global $securityLogger;
+	    $securityLogger->warning("Username validation failed: input is not a string", ["ip" => $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN_IP']);	// write into the log
+	    return false; 
+	}
+    
         $clean = self::sanitizeInput($username);
         // lenght 3-20, alphanumeric and underscore only
         if (!preg_match("/^[a-zA-Z0-9_]{3,20}$/", $clean)) {
             global $securityLogger;
-            $securityLogger->warning("Invalid username format", ["input" => $username, "ip" => $_SERVER['REMOTE_ADDR']]);
+            $securityLogger->warning("Invalid username format", ["input" => substr($clean, 0, 20), "ip" => $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN_IP']);
             return false;
         }
-        return $username;
+        return $clean;
     }
 
     /**
@@ -93,13 +115,20 @@ class SecurityUtils {
      * Logs a warning if the format is invalid.
      */
     public static function validateEmail($email) {
+        // blocks anomalies such as Array Injection
+        if (!is_string($email)) {
+	    global $securityLogger;
+	    $securityLogger->warning("Email validation failed: input is not a string", ["ip" => $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN_IP']);	// write into the log
+	    return false; 
+	}
+        
         $clean = self::sanitizeInput($email);
         if (strlen($clean) > 255 || !filter_var($clean, FILTER_VALIDATE_EMAIL)) {
             global $securityLogger;
-            $securityLogger->warning("Invalid email format for username", ["email" => $clean, "ip" => $_SERVER['REMOTE_ADDR']]);
+            $securityLogger->warning("Invalid email format for username", ["email" => substr($clean, 0, 50), "ip" => $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN_IP']);
             return false;
         }
-        return $email;
+        return $clean;
     }
     
     /**
@@ -108,11 +137,18 @@ class SecurityUtils {
      * Logs a warning if the format is invalid.
      */
     public static function validatePassword($password) {
+    	// blocks anomalies such as Array Injection
+        if (!is_string($password)) {
+	    global $securityLogger;
+	    $securityLogger->warning("Password validation failed: input is not a string", ["ip" => $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN_IP']);	// write into the log
+	    return false; 
+	}
+    	
     	// length check
 	$length = strlen($password);
 	if ($length < 8 || $length > 72) {
 	    global $securityLogger;
-	    $securityLogger->warning("Password validation failed: invalid length", ["length" => $length, "ip" => $_SERVER['REMOTE_ADDR']]);
+	    $securityLogger->warning("Password validation failed: invalid length", ["length" => $length, "ip" => $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN_IP']);
 	    return false;
 	}
 	    
@@ -123,7 +159,7 @@ class SecurityUtils {
 	// (?=.*[\W_]) -> at least an special char (non alfanumerico)
 	if (!preg_match('/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).+$/', $password)) {
 	    global $securityLogger;
-	    $securityLogger->warning("Password validation failed: weak complexity");
+	    $securityLogger->warning("Password validation failed: weak complexity", ["ip" => $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN_IP']);
 	    return false;
 	}
 
