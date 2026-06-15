@@ -216,9 +216,9 @@ class SecurityUtils {
     
     /**
      * Checks whether an IP address has exceeded the maximum retry limit for a given action. If it hasn't passed it, log the current attempt.
-     * @param mysqli $conn Connessione al database
-     * @param string $action L'azione da controllare ('registration' o 'login')
-     * @return bool True se l'accesso è consentito, False se l'IP è bloccato (Rate Limit superato)
+     * @param mysqli $conn DB connection
+     * @param string $action action to check (e.g. 'registration' or 'login')
+     * @return bool True if access is allowed, False if the IP is blocked (Rate Limit exceeded)
      */
     public static function checkRateLimit(mysqli $conn, string $action): bool {
     	$ip = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
@@ -248,9 +248,8 @@ class SecurityUtils {
     /**
      * A function to reset rate limit logs for a given action, such as when a user has multiple accounts and logs in and out of them quickly, or when multiple users share the same IP address. 
      * These legitimate accesses (which create a connection) should be limited by the current mechanism. So, when a successful access occurs, the rate data for that IP address should be deleted.
-     * @param mysqli $conn Connessione al database
-     * @param string $action L'azione da controllare ('registration' o 'login')
-     * @return bool True se l'accesso è consentito, False se l'IP è bloccato (Rate Limit superato)
+     * @param mysqli $conn DB connection
+     * @param string $action action to check (e.g. 'registration' or 'login')
      */
     public static function resetRateLimitForIP(mysqli $conn, string $action){
     	$ip = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
