@@ -244,5 +244,23 @@ class SecurityUtils {
 
 	return true; // Accesso consentito
     }
+    
+    /**
+     * A function to reset rate limit logs for a given action, such as when a user has multiple accounts and logs in and out of them quickly, or when multiple users share the same IP address. 
+     * These legitimate accesses (which create a connection) should be limited by the current mechanism. So, when a successful access occurs, the rate data for that IP address should be deleted.
+     * @param mysqli $conn Connessione al database
+     * @param string $action L'azione da controllare ('registration' o 'login')
+     * @return bool True se l'accesso è consentito, False se l'IP è bloccato (Rate Limit superato)
+     */
+    public static function resetRateLimitForIP(mysqli $conn, string $action){
+    	$ip = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+	    
+	// Counts the attempts made by this IP in the last 15 minutes for this specific action
+	$clear_rate_stmt = $conn->prepare("DELETE FROM rate_limits WHERE ip_address = ? AND action_type = ?");
+	$clear_rate_stmt->bind_param("ss", $ip, $action);
+	$clear_rate_stmt->execute();
+	$clear_rate_stmt->close();
+
+    }
 }
 ?>

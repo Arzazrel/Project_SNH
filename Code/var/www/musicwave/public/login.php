@@ -96,7 +96,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         password_verify($password_raw, $dummy_hash); // ANTI-TIMING: eseguiamo comunque per simulare lo stesso tempo di elaborazione
                     } else {	// success login
                     
-		    	SecurityUtils::rotateSessionId();		// rotate session ID to mitigate session fixation
+			SecurityUtils::resetRateLimitForIP($conn, 'login');	// Reset IP rate limit on successful login to prevent locking out NAT/Shared IPs
+		    	
+		    	SecurityUtils::rotateSessionId();			// rotate session ID to mitigate session fixation
 		            
 		        // Reset attempts and set session
 		        $reset_stmt = $conn->prepare("UPDATE users SET login_attempts = 0, lock_until = NULL WHERE id = ?");	// prepared query for update 
