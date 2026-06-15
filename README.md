@@ -222,6 +222,41 @@ To search the apache2 errors see the log files
 sudo tail -n 20 /var/log/apache2/error.log
 ```
 
+## Upgrading Password Hashing to Argon2id (Optional)
+
+By default, MusicWave uses **BCRYPT** (`PASSWORD_BCRYPT`) for password hashing. 
+This choice ensures maximum out-of-the-box portability across standard PHP environments while maintaining robust protection against brute-force and Rainbow Table attacks, tailored to the application's specific threat model.
+
+However, if your PHP environment natively supports **Argon2id** (the current industry state-of-the-art algorithm, which provides superior resistance against GPU/ASIC-hardware parallel cracking and side-channel attacks), you can easily upgrade the security layer. 
+
+To check if your PHP server supports Argon2id there are two ways to do this on your local server:
+1. (via CLI terminal):
+   Open your computer's terminal and type:
+   ```bash
+   php -r "print_r(password_algos());"
+   ```
+2. (Using a PHP script):
+   Create a temporary file called test.php with this code and type it into your browser:
+   ```
+   <?php
+	if (defined('PASSWORD_ARGON2ID')) {
+		echo "Argon2id è supportato!";
+	} else {
+		echo "Argon2id NON è supportato su questo server.";
+	}
+	?>
+   ```
+
+To perform the upgrade, locate the registration and password reset controllers (`register.php` and `reset_password.php`) and update the hashing function call as follows:
+
+```php
+// Replace PASSWORD_BCRYPT with PASSWORD_ARGON2ID
+$hashed_password = password_hash($password_raw, PASSWORD_ARGON2ID);
+```
+
+Note: No changes are required in login.php, as PHP's native password_verify() function automatically detects the algorithm type from the stored database hash prefix.
+
+
 ## **Developer's notes**  
   
 Work In Progress
