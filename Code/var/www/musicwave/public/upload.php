@@ -173,8 +173,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $safe_filename = $crypto_token . "_" . time() . "." . $verified_ext;	// concanete the rndom string with time and format
                         $destination_path = DIR_UPLOADS_AUDIO . $safe_filename;			// create the path to save audio in the server
                         
-                        $db_content_path = URL_UPLOADS_AUDIO . $safe_filename;		// Save relative web path in the database content field
-                        
+                        $db_content_path = $safe_filename;					// save relative web path in the database content field
+
                         // secure move file out of temporary storage into the upload folder
                         if (move_uploaded_file($file_tmp, $destination_path)) {
                             $stmt = $conn->prepare("INSERT INTO media (user_id, title, author, type, content, is_premium) VALUES (?, ?, ?, 'audio', ?, ?)");	// insert query

@@ -20,10 +20,7 @@ define("DIR_PUBLIC", DIR_BASE . 'public/');
 define("DIR_LOGS", '/var/www/musicwave_logs/');
 
 // Server absolute path for file uploads (used by PHP move_uploaded_file)
-define('DIR_UPLOADS_AUDIO', DIR_PUBLIC . 'uploads/audio/');
-
-// Public URL path for the web browser (used by HTML audio tags)
-define('URL_UPLOADS_AUDIO', 'uploads/audio/');
+define('DIR_UPLOADS_AUDIO', DIR_BASE . 'stored_media/uploads/audio/');
 
 /** 
  * DATABASE CREDENTIALS for the dedicated low-privileged user.
