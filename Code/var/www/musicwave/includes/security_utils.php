@@ -197,7 +197,8 @@ class SecurityUtils {
 
         $_SESSION = array();	// clear the server-side $_SESSION array, equal to session_unset. Free data from memory
 
-     	// delete the session cookie from the client's browser
+     	// delete the session cookie from the client's browser. Send a cookie with the same name and session parameters, but with an expiration date in the past.
+     	// When the browser sees a past date, it immediately deletes the cookie from its storage space.
      	if (ini_get("session.use_cookies")) {
             $params = session_get_cookie_params();
                 setcookie(
