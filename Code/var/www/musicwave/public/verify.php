@@ -97,7 +97,7 @@ if (empty($token) || !preg_match('/^[a-f0-9]{64}$/i', $token)) {
             <?php endif; ?>
 
             <div class="text-center margin-top-md">
-                <a href="login.php" class="btn btn-submit-green" style="display: block; text-align: center; box-sizing: border-box;">Go to Login Screen</a>
+                <a href="login.php" class="btn btn-submit-green">Go to Login Screen</a>
             </div>
         </div>
     </div>
