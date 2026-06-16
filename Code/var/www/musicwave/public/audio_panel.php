@@ -28,8 +28,9 @@ try {
     $stmt->execute();
     $result = $stmt->get_result();
 } catch (Exception $e) {
-    $securityLogger->error("Database error inside audio submodule", ["error" => $e->getMessage()]);
-    echo "<p style='color: red;'>Unable to load audio tracks repository.</p>";
+    global $errorLogger;
+    $errorLogger->error("Database error inside audio submodule", ["error" => $e->getMessage(), "user_id" => $_SESSION['user_id'] ?? 'ANONYMOUS', "ip" => $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN_IP']);
+    echo "<p class='text-danger'>Unable to load audio tracks repository.</p>";
     return;
 }
 
@@ -39,14 +40,14 @@ if (empty($_SESSION['csrf_token'])) {
 }
 ?>
 
-<div style="margin-bottom: 20px;">
+<div class="repo-header">
     <h3 class="section-title">Audio Download Vault</h3>
     <span class="text-muted">Select a track from the repository below to securely download the asset to your device.</span>
 </div>
 
 <div class="audio-list-panel">
     <?php if ($result->num_rows === 0): ?>
-        <div style="text-align: center; padding: 60px 0;" class="text-muted">No audio tracks found in the database.</div>
+        <div class="text-muted text-center padding-y-lg">No audio tracks found in the database.</div>
     <?php else: ?>
         <?php 
         $cnt = 0;
@@ -56,7 +57,7 @@ if (empty($_SESSION['csrf_token'])) {
             $border_class = ($cnt === $result->num_rows) ? '' : 'track-item-border';
         ?>
             <div class="track-item <?php echo $item_bg_class . ' ' . $border_class; ?>">
-                <div style="max-width: 75%;">
+                <div class="track-info-container">
                     <span class="track-title">
                         <?php echo htmlspecialchars($track['title'], ENT_QUOTES, 'UTF-8'); ?>
                         <?php echo $track['is_premium'] ? ' <span class="badge-file-premium">PREMIUM</span>' : ''; ?>
@@ -64,7 +65,7 @@ if (empty($_SESSION['csrf_token'])) {
                     <span class="track-author">Author: <?php echo htmlspecialchars($track['author'], ENT_QUOTES, 'UTF-8'); ?></span>
                 </div>
                 <div>
-                    <form method="POST" action="download.php" target="download_container" style="margin: 0;">
+                    <form method="POST" action="download.php" target="download_container" class="inline-form">
                         <input type="hidden" name="id" value="<?php echo (int)$track['id']; ?>">
                         <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">
                         
