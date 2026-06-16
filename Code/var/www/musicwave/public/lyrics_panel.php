@@ -50,20 +50,21 @@ if ($action === 'view' && $lyric_id > 0) {
         // -- end this part of php and start html code --
         ?>
         
-        <div class="lyric-view-container" style="background: #fafafa; padding: 20px; border-radius: 5px; border: 1px solid #ddd; margin-top: 15px;">
-            <h2 style="margin-top: 0; color: #2b7a78;"><?php echo htmlspecialchars($lyric_data['title'], ENT_QUOTES, 'UTF-8'); ?></h2>
-            <p style="font-style: italic; color: #555;">By <?php echo htmlspecialchars($lyric_data['author'], ENT_QUOTES, 'UTF-8'); ?></p>
-            <hr style="border: 0; border-top: 1px solid #eee; margin: 15px 0;">
-            
-            <div class="lyric-content" style="white-space: pre-wrap; font-family: monospace; line-height: 1.6; background: white; padding: 15px; border: 1px dashed #ccc;">
-                <?php 
-                    echo isset($lyric_data['content']) ? htmlspecialchars($lyric_data['content'], ENT_QUOTES, 'UTF-8') : "[Text Content Display Placeholder] Secure metadata loaded successfully."; 
-                ?>
+        <div class="repo-header">
+                <a href="dashboard.php?view=lyrics" class="page-link">&larr; Back to Lyrics Repository</a>
             </div>
-            
-            <p style="margin-top: 20px;">
-                <a href="dashboard.php?view=lyrics" class="page-link" style="padding: 8px 15px;">&laquo; Back to Lyrics Repository</a>
-            </p>
+            <div class="lyric-view-container">
+                <h2 class="lyric-view-title">
+                    <?php echo htmlspecialchars($lyric_data['title'], ENT_QUOTES, 'UTF-8'); ?>
+                    <?php if ($lyric_data['is_premium']): ?>
+                        <span class="badge-file-premium">PREMIUM</span>
+                    <?php else: ?>
+                        <span class="badge-file-standard">STANDARD</span>
+                    <?php endif; ?>
+                </h2>
+                <p class="lyric-view-author">Author: <?php echo htmlspecialchars($lyric_data['author'], ENT_QUOTES, 'UTF-8'); ?></p>
+                <hr class="lyric-divider">
+             <div class="lyric-content-box"><?php echo htmlspecialchars($lyric_data['content'], ENT_QUOTES, 'UTF-8'); ?></div>
         </div>
 
         <?php
@@ -84,7 +85,7 @@ if ($current_page < 1) {
 }
 
 $records_per_page = 5;					# number of lyrics to visualize in the page
-$offset = ($current_page - 1) * $records_per_page;	# offset indicate the number of lyrics of the pas page (if sum to current index get the total index)
+$offset = ($current_page - 1) * $records_per_page;	# offset indicate the number of lyrics of the past page (if sum to current index get the total index)
 
 try {
     // Discriminate query for role-based counting. If the user is not premium, we exclude premium records at the database level.
@@ -127,51 +128,43 @@ try {
 }
 ?>
 
-<div style="margin-bottom: 20px;">
-    <h3 style="margin: 0 0 5px 0; color: #17252a; font-size: 20px; font-weight: bold;">Music Lyrics Repository</h3>
-    <span style="color: #64748b; font-size: 14px;">Browse through your secure synchronized music tracks metadata repository.</span>
+<div class="repo-header">
+    <h3 class="section-title">Lyrics Central Hub</h3>
+    <p class="text-muted">Browse through the available track texts within your permissions map.</p>
 </div>
 
-<table class="lyrics-table" style="width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 10px; table-layout: fixed; border: 1px solid #cbd5e1; border-radius: 6px; overflow: hidden;">
+<table class="lyrics-table">
     <thead>
-        <tr style="background-color: #f8fafc;">
-            <th style="width: 35%; text-align: left; padding: 12px 15px; border-bottom: 2px solid #cbd5e1; color: #334155; font-weight: 600;">Title</th>
-            <th style="width: 25%; text-align: left; padding: 12px 15px; border-bottom: 2px solid #cbd5e1; color: #334155; font-weight: 600;">Author</th>
-            <th style="width: 15%; text-align: left; padding: 12px 15px; border-bottom: 2px solid #cbd5e1; color: #334155; font-weight: 600;">Type</th>
-            <th style="width: 15%; text-align: left; padding: 12px 15px; border-bottom: 2px solid #cbd5e1; color: #334155; font-weight: 600;">Uploaded At</th>
-            <th style="width: 10%; text-align: center; padding: 12px 15px; border-bottom: 2px solid #cbd5e1; color: #334155; font-weight: 600;">Actions</th>
+        <tr>
+            <th class="col-title">Track Title</th>
+            <th class="col-author">Artist</th>
+            <th class="col-type">Access Level</th>
+            <th class="col-date">Uploaded at</th>
+            <th class="col-actions">Read</th>
         </tr>
     </thead>
     <tbody>
-        <?php if ($result->num_rows === 0): ?>
+        <?php if ($total_records === 0): ?>
             <tr>
-                <td colspan="5" style="text-align: center; padding: 30px; color: #64748b; background-color: #ffffff;">No lyrics available in the database.</td>
+                <td colspan="5" class="empty-table-msg">No lyrics modules cataloged under this workspace filter view.</td>
             </tr>
         <?php else: ?>
             <?php 
-            $cnt = 0;
+            $count = 0;
             while ($row = $result->fetch_assoc()): 
-                $cnt++;
-                // Effetto zebra-striping alternando il background delle righe
-                $bg_color = ($cnt % 2 === 0) ? '#f8fafc' : '#ffffff';
-                // Rimuoviamo il bordo inferiore all'ultima riga della tabella
-                $border_bottom = ($cnt === $result->num_rows) ? 'none' : '1px solid #e2e8f0';
+                $count++;
+                $is_last = ($count === $result->num_rows);
+                $row_class = $is_last ? 'last-row' : '';
             ?>
-                <tr style="background-color: <?php echo $bg_color; ?>; transition: background 0.15s;">
-                    <td style="padding: 12px 15px; border-bottom: <?php echo $border_bottom; ?>; color: #0f172a; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                        <?php echo htmlspecialchars($row['title'], ENT_QUOTES, 'UTF-8'); ?>
+                <tr class="<?php echo $row_class; ?>">
+                    <td><div class="lyrics-table-title"><?php echo htmlspecialchars($row['title'], ENT_QUOTES, 'UTF-8'); ?></div></td>
+                    <td><div class="lyrics-table-author"><?php echo htmlspecialchars($row['author'], ENT_QUOTES, 'UTF-8'); ?></div></td>
+                    <td>
+                        <?php echo $row['is_premium'] ? '<span class="badge-file-premium">PREMIUM</span>' : '<span class="badge-file-standard">STANDARD</span>'; ?>
                     </td>
-                    <td style="padding: 12px 15px; border-bottom: <?php echo $border_bottom; ?>; color: #334155; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                        <?php echo htmlspecialchars($row['author'], ENT_QUOTES, 'UTF-8'); ?>
-                    </td>
-                    <td style="padding: 12px 15px; border-bottom: <?php echo $border_bottom; ?>;">
-                        <?php echo $row['is_premium'] ? '<span class="badge-file-premium">PREMIUM</span>' : '<span style="background: #e2e8f0; color: #334155; padding: 2px 6px; font-size: 11px; font-weight: bold; border-radius: 3px;">STANDARD</span>'; ?>
-                    </td>
-                    <td style="padding: 12px 15px; border-bottom: <?php echo $border_bottom; ?>; color: #64748b; font-size: 13px;">
-                        <?php echo htmlspecialchars($row['created_at'], ENT_QUOTES, 'UTF-8'); ?>
-                    </td>
-                    <td style="padding: 12px 15px; border-bottom: <?php echo $border_bottom; ?>; text-align: center;">
-                        <a href="dashboard.php?view=lyrics&action=view&id=<?php echo (int)$row['id']; ?>" class="page-link" style="font-size: 12px; padding: 4px 10px; display: inline-block;">Read</a>
+                    <td><span class="lyrics-table-date"><?php echo htmlspecialchars($row['created_at'], ENT_QUOTES, 'UTF-8'); ?></span></td>
+                    <td class="text-center">
+                        <a href="dashboard.php?view=lyrics&action=view&id=<?php echo (int)$row['id']; ?>" class="page-link">Read</a>
                     </td>
                 </tr>
             <?php endwhile; ?>
@@ -179,19 +172,16 @@ try {
     </tbody>
 </table>
 
-<div class="pagination-container" style="margin-top: 25px; display: flex; justify-content: center; gap: 8px; width: 100%;">
+<div class="pagination-container">
     <?php
-    	// visualize the link for the lyrics pages only if there are more than 1 page 
+    	// visualize the link for the lyrics pages only if there are more than 1 page  
     	if ($total_pages > 1): 
     ?>
         <?php for ($i = 1; $i <= $total_pages; $i++): ?>
-            <a href="dashboard.php?view=lyrics&page=<?php echo $i; ?>" 
-               class="page-link <?php echo $i === $current_page ? 'active' : ''; ?>"
-               style="padding: 6px 12px; border-radius: 4px; min-width: 15px; text-align: center;">
+            <a href="dashboard.php?view=lyrics&page=<?php echo $i; ?>" class="page-link <?php echo ($i === $current_page) ? 'active' : ''; ?>">
                 <?php echo $i; ?>
             </a>
         <?php endfor; ?>
     <?php endif; ?>
 </div>
-
 <?php $stmt->close(); ?>

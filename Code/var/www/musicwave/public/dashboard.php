@@ -54,27 +54,7 @@ $safe_role = htmlspecialchars(strtoupper($user_role), ENT_QUOTES, 'UTF-8');
 <head>
     <title>MusicWave - Dashboard</title>
     <meta charset="UTF-8">
-    <style>
-        body { font-family: Arial, sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; }
-        .header-hud { display: flex; justify-content: space-between; align-items: center; background-color: #2b7a78; color: white; padding: 15px 30px; border-radius: 8px; margin-bottom: 20px; }
-        .header-hud h1 { margin: 0; font-size: 24px; }
-        .welcome-text { font-size: 16px; font-weight: bold; }
-        .badge-premium { background-color: #f1c40f; color: #17252a; padding: 3px 8px; border-radius: 4px; font-size: 12px; margin-left: 5px; }
-        .badge-standard { background-color: #bdc3c7; color: #17252a; padding: 3px 8px; border-radius: 4px; font-size: 12px; margin-left: 5px; }
-        .nav-buttons { display: flex; gap: 15px; margin-bottom: 20px; align-items: center; }
-        .btn { padding: 10px 20px; font-size: 15px; border: none; border-radius: 5px; cursor: pointer; text-decoration: none; font-weight: bold; transition: background 0.2s; }
-        .btn-menu { background-color: #3aafa9; color: white; }
-        .btn-menu:hover, .btn-menu.active { background-color: #17252a; }
-        .btn-upload { background-color: #f39c12; color: white; }
-        .btn-upload:hover { background-color: #d35400; }
-        .btn-logout { background-color: #e74c3c; color: white; }
-        .btn-logout:hover { background-color: #c0392b; }
-        .search-form { display: flex; gap: 10px; margin-left: auto; }
-        .search-input { padding: 8px 12px; width: 250px; border: 1px solid #ccc; border-radius: 5px; }
-        .main-content-rect { background-color: white; border: 2px solid #def2f1; border-radius: 8px; min-height: 400px; padding: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        .empty-state { color: #7f8c8d; text-align: center; margin-top: 150px; font-style: italic; }
-        .badge-file-premium { background: #f1c40f; color: #000; padding: 2px 5px; font-size: 10px; font-weight: bold; border-radius: 3px; }
-    </style>
+    <link rel="stylesheet" href="<?php echo WEB_CSS; ?>style.css">
 </head>
 <body>
 

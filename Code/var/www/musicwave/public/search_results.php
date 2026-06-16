@@ -83,54 +83,52 @@ try {
 }
 ?>
 
-<div style="margin-bottom: 20px;">
-    <h3 style="margin: 0 0 5px 0; color: #17252a; font-size: 20px; font-weight: bold;">Search Results</h3>
-    <span style="color: #64748b; font-size: 14px; display: block; line-height: 1.4;">
-        Showing matches for keyword <strong style="color: #17252a;">"<?php echo htmlspecialchars($search_query, ENT_QUOTES, 'UTF-8'); ?>"</strong> 
-        inside the <strong style="color: #2b7a78; text-transform: uppercase;"><?php echo htmlspecialchars($search_context, ENT_QUOTES, 'UTF-8'); ?></strong> repository.<br>
-        <small style="color: #94a3b8;">* The system actively scans both <strong>titles</strong> and <strong>authors/artists</strong> matching your parameters.</small>
-    </span>
+<div class="repo-header">
+    <h3 class="section-title">Query Results Matrix</h3>
+    <p class="text-muted">Matches found for target elements context: <strong>"<?php echo htmlspecialchars($search_query, ENT_QUOTES, 'UTF-8'); ?>"</strong> inside <em><?php echo htmlspecialchars($search_context, ENT_QUOTES, 'UTF-8'); ?></em></p>
 </div>
 
 <?php if (empty($results)): ?>
-    <div style="text-align: center; padding: 50px; color: #64748b; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 6px; font-style: italic;">
-        No matches found. Try modifying your keywords or switching repository sections.
+    <div class="empty-table-msg">
+        No matched units identified within authorized namespace attributes.
     </div>
 <?php else: ?>
-    <div style="border: 1px solid #cbd5e1; border-radius: 6px; overflow: hidden; background: white;">
-        <ul class="search-results-list" style="list-style: none; padding: 0; margin: 0;">
+    <table class="lyrics-table">
+        <thead>
+            <tr>
+                <th class="col-title">Module Title</th>
+                <th class="col-author">Artist / Creator</th>
+                <th class="col-type">Clearance Badge</th>
+                <th class="col-actions">Operational Link</th>
+            </tr>
+        </thead>
+        <tbody>
             <?php 
-            $cnt = 0;
+            $count = 0;
             foreach ($results as $item): 
-                $cnt++;
-                $bg_color = ($cnt % 2 === 0) ? '#f8fafc' : '#ffffff';
-                $border_bottom = ($cnt === count($results)) ? 'none' : '1px solid #e2e8f0';
+                $count++;
+                $is_last = ($count === count($results));
+                $row_class = $is_last ? 'last-row' : '';
             ?>
-                <li class="search-result-item" style="display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; background-color: <?php echo $bg_color; ?>; border-bottom: <?php echo $border_bottom; ?>; transition: background 0.15s;">
-                    <div style="max-width: 75%; overflow: hidden;">
-                        <span class="result-title" style="color: #0f172a; font-weight: 500; font-size: 15px; display: block; text-overflow: ellipsis; white-space: nowrap;">
-                            <?php echo htmlspecialchars($item['title'], ENT_QUOTES, 'UTF-8'); ?>
-                            <?php echo $item['is_premium'] ? ' <span class="badge-file-premium" style="margin-left: 5px;">PREMIUM</span>' : ''; ?>
-                        </span>
-                        <span class="result-sub" style="color: #64748b; font-size: 12px; margin-top: 3px; display: inline-block;">
-                            <strong>Artist/Author:</strong> <?php echo htmlspecialchars($item['extra_info'], ENT_QUOTES, 'UTF-8'); ?>
-                        </span>
-                    </div>
-                    <div>
+                <tr class="<?php echo $row_class; ?>">
+                    <td><div class="lyrics-table-title"><?php echo htmlspecialchars($item['title'], ENT_QUOTES, 'UTF-8'); ?></div></td>
+                    <td><div class="lyrics-table-author"><?php echo htmlspecialchars($item['extra_info'], ENT_QUOTES, 'UTF-8'); ?></div></td>
+                    <td>
+                        <?php echo $item['is_premium'] ? '<span class="badge-file-premium">PREMIUM</span>' : '<span class="badge-file-standard">STANDARD</span>'; ?>
+                    </td>
+                    <td class="text-center">
                         <?php if ($item['type'] === 'audio'): ?>
-                            <a href="dashboard.php?view=audio&play_id=<?php echo (int)$item['id']; ?>" class="page-link" style="font-size: 12px; padding: 5px 12px; border-radius: 4px; display: inline-block; text-decoration: none;">Stream Track</a>
+                            <a href="dashboard.php?view=audio" class="page-link">Locate Audio Track</a>
                         <?php else: ?>
-                            <a href="dashboard.php?view=lyrics&action=view&id=<?php echo (int)$item['id']; ?>" class="page-link" style="font-size: 12px; padding: 5px 12px; border-radius: 4px; display: inline-block; text-decoration: none;">Read Lyrics</a>
+                            <a href="dashboard.php?view=lyrics&action=view&id=<?php echo (int)$item['id']; ?>" class="page-link">Read Lyrics</a>
                         <?php endif; ?>
-                    </div>
-                </li>
+                    </td>
+                </tr>
             <?php endforeach; ?>
-        </ul>
-    </div>
-    
-    <div style="margin-top: 20px; text-align: left;">
-        <a href="dashboard.php?view=<?php echo htmlspecialchars($search_context, ENT_QUOTES, 'UTF-8'); ?>" class="page-link" style="padding: 6px 14px; font-size: 13px; background-color: #64748b;">
-            &laquo; Back to Full <?php echo ucfirst($search_context); ?> List
-        </a>
-    </div>
+        </tbody>
+    </table>
 <?php endif; ?>
+
+<div class="margin-top-md text-left">
+    <a href="dashboard.php?view=<?php echo htmlspecialchars($search_context, ENT_QUOTES, 'UTF-8'); ?>" class="page-link">Return to Section Repository</a>
+</div>

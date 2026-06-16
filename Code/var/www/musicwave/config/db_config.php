@@ -22,6 +22,11 @@ define("DIR_LOGS", '/var/www/musicwave_logs/');
 // Server absolute path for file uploads (used by PHP move_uploaded_file)
 define('DIR_UPLOADS_AUDIO', DIR_BASE . 'stored_media/uploads/audio/');
 
+// --- WEB ASSETS CONSTANTS (For safe HTML inclusion) ---
+// Define web-relative paths for static assets.
+define('WEB_CSS', 'css/');
+define('WEB_JS', 'js/');
+
 /** 
  * DATABASE CREDENTIALS for the dedicated low-privileged user.
  * For security purpose this file should be stored outside the web root or protected.

@@ -1,0 +1,195 @@
+/* --- GLOBAL RESET & TYPOGRAPHY --- */
+body { font-family: Arial, sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; }
+
+/* --- HUD & NAVIGATION --- */
+.header-hud { display: flex; justify-content: space-between; align-items: center; background-color: #2b7a78; color: white; padding: 15px 30px; border-radius: 8px; margin-bottom: 20px; }
+.header-hud h1 { margin: 0; font-size: 24px; }
+.welcome-text { font-size: 16px; font-weight: bold; }
+.nav-buttons { display: flex; gap: 15px; margin-bottom: 20px; align-items: center; }
+
+/* --- BUTTONS --- */
+.btn { padding: 10px 20px; font-size: 15px; border: none; border-radius: 5px; cursor: pointer; text-decoration: none; font-weight: bold; transition: background 0.2s; }
+.btn-logout { background-color: #e74c3c; color: white; }
+.btn-logout:hover { background-color: #c0392b; }
+.btn-back { background-color: #3aafa9; color: white; margin-bottom: 20px; display: inline-block; }
+.btn-menu { background-color: #3aafa9; color: white; }
+.btn-menu:hover, .btn-menu.active { background-color: #17252a; }
+.btn-upload { background-color: #f39c12; color: white; }
+.btn-upload:hover { background-color: #d35400; }
+.btn-submit-green { background-color: #2b7a78; color: white; width: 100%; }
+.btn-submit-green:hover { background-color: #1a5251; }
+
+/* --- CONTAINERS & PANELS --- */
+.upload-container { background-color: white; border: 2px solid #def2f1; border-radius: 8px; padding: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); max-width: 650px; margin: 0 auto; }
+.main-content-rect { background-color: white; border: 2px solid #def2f1; border-radius: 8px; min-height: 400px; padding: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+.empty-state { color: #7f8c8d; text-align: center; margin-top: 150px; font-style: italic; }
+
+/* --- FORMS & ALERTS --- */
+.form-group { margin-bottom: 20px; }
+.form-group label { display: block; font-weight: bold; margin-bottom: 5px; }
+.form-control { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+.help-text { color:#7f8c8d; font-size: 13px; }
+.alert { padding: 15px; margin-bottom: 20px; border-radius: 4px; font-weight: bold; }
+.alert-danger { background-color: #fde8e8; color: #e74c3c; border: 1px solid #f8b4b4; }
+.alert-success { background-color: #eafaf1; color: #2ecc71; border: 1px solid #abebc6; }
+.success-banner { background-color: #d4edda; color: #155724; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+
+/* --- SEARCH FORM --- */
+.search-form { display: flex; gap: 10px; margin-left: auto; }
+.search-input { padding: 8px 12px; width: 250px; border: 1px solid #ccc; border-radius: 5px; }
+
+/* --- UPLOAD PANEL SWITCHER --- */
+.section-toggle { display: flex; gap: 10px; margin-bottom: 25px; background: #def2f1; padding: 10px; border-radius: 5px; }
+.toggle-btn { flex: 1; padding: 10px; border: none; background: white; cursor: pointer; font-weight: bold; border-radius: 4px; transition: 0.2s; }
+.toggle-btn.active { background: #2b7a78; color: white; }
+.upload-panel { display: none; }
+.upload-panel.active { display: block; }
+
+/* --- BADGES --- */
+.badge-premium { background-color: #f1c40f; color: #17252a; padding: 3px 8px; border-radius: 4px; font-size: 12px; margin-left: 5px; }
+.badge-standard { background-color: #bdc3c7; color: #17252a; padding: 3px 8px; border-radius: 4px; font-size: 12px; margin-left: 5px; }
+.badge-file-premium { background: #f1c40f; color: #000; padding: 2px 5px; font-size: 10px; font-weight: bold; border-radius: 3px; }
+.badge-file-standard { background: #e2e8f0; color: #334155; padding: 2px 6px; font-size: 11px; font-weight: bold; border-radius: 3px; }
+
+/* --- UTILITIES & LAYOUTS --- */
+.text-danger { color: red; font-weight: bold; }
+.text-muted { color: #64748b; font-size: 14px; }
+.section-title { margin: 0 0 5px 0; color: #17252a; font-size: 20px; font-weight: bold; }
+.hidden-iframe { display: none; width: 0; height: 0; border: none; }
+.repo-header { margin-bottom: 20px; }
+.text-center { text-align: center; }
+.text-left { text-align: left; }
+.margin-top-md { margin-top: 20px; }
+
+/* --- TABLES CONFIGURATION --- */
+.lyrics-table { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 10px; table-layout: fixed; border: 1px solid #cbd5e1; border-radius: 6px; overflow: hidden; }
+.lyrics-table th { padding: 12px 15px; border-bottom: 2px solid #cbd5e1; color: #334155; font-weight: 600; background-color: #f8fafc; text-align: left; }
+.lyrics-table td { padding: 12px 15px; border-bottom: 1px solid #e2e8f0; color: #334155; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; }
+.lyrics-table tr.last-row td { border-bottom: none; }
+
+.col-title { width: 35%; text-align: left; }
+.col-author { width: 25%; text-align: left; }
+.col-type { width: 15%; text-align: left; }
+.col-date { width: 15%; text-align: left; }
+.col-actions { width: 10% ; text-align: center; }
+
+.lyrics-table-title { color: #0f172a; font-weight: 500; }
+.lyrics-table-author { color: #334155; }
+.lyrics-table-date { color: #64748b; font-size: 13px; }
+.empty-table-msg { text-align: center; padding: 30px; color: #64748b; background-color: #ffffff; }
+/* used by admin dashboard */
+.lyrics-table th.col-username { width: 25%; }
+.lyrics-table th.col-email    { width: 30%; }
+.lyrics-table th.col-tier     { width: 15%; }
+.lyrics-table th.col-date     { width: 15%; }
+.lyrics-table th.col-actions  { width: 15%; text-align: center; }
+
+/* --- AUDIO TRACK PANEL SPECIFICS --- */
+.audio-list-panel { width: 100%; max-height: 500px; overflow-y: auto; border: 1px solid #cbd5e1; border-radius: 6px; background: white; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); }
+.track-item { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-bottom: 1px solid #e2e8f0; transition: background 0.15s; }
+.track-item:last-child { border-bottom: none; }
+.track-item-bg-alt { background-color: #f8fafc; }
+.track-item-bg-white { background-color: #ffffff; }
+.track-title { color: #0f172a; font-weight: 500; font-size: 15px; display: block; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; }
+.track-author { color: #64748b; font-size: 12px; margin-top: 3px; display: inline-block; }
+.btn-download-mp3 { font-size: 13px; padding: 8px 16px; border-radius: 4px; border: none; font-weight: bold; color: white; background-color: #2b7a78; cursor: pointer; transition: background 0.2s; text-transform: uppercase; letter-spacing: 0.5px; }
+.btn-download-mp3:hover { background-color: #1a5251; }
+
+/* --- LYRICS DETAIL PANEL SPECIFICS --- */
+.lyric-view-container { background: #fafafa; padding: 20px; border-radius: 5px; border: 1px solid #ddd; margin-top: 15px; }
+.lyric-view-title { margin-top: 0; color: #2b7a78; }
+.lyric-view-author { font-style: italic; color: #555; }
+.lyric-divider { border: 0; border-top: 1px solid #eee; margin: 15px 0; }
+.lyric-content-box { white-space: pre-wrap; font-family: monospace; line-height: 1.6; background: white; padding: 15px; border: 1px dashed #ccc; }
+
+/* --- PAGINATION ELEMENTS --- */
+.page-link { font-size: 12px; padding: 4px 10px; display: inline-block; background: #e2e8f0; color: #17252a; text-decoration: none; border-radius: 4px; transition: 0.2s; }
+.page-link:hover, .page-link.active { background: #2b7a78; color: white; }
+.pagination-container { margin-top: 25px; display: flex; justify-content: center; gap: 8px; width: 100%; }
+
+/* --- ADMIN DASHBOARD PANEL SPECIFICS --- */
+.action-button { 
+    padding: 6px 12px; 
+    font-size: 12px; 
+    border: none; 
+    border-radius: 4px; 
+    font-weight: bold; 
+    cursor: pointer; 
+    transition: background 0.2s, transform 0.1s; 
+    text-transform: uppercase; 
+    letter-spacing: 0.5px; 
+}
+.action-button:active {
+    transform: scale(0.95);
+}
+.btn-promote { 
+    background-color: #2ecc71; 
+    color: white; 
+}
+.btn-promote:hover { 
+    background-color: #27ae60; 
+}
+.btn-demote { 
+    background-color: #e74c3c; 
+    color: white; 
+}
+.btn-demote:hover { 
+    background-color: #c0392b; 
+}
+
+/* --- AUTHENTICATION PAGES SPECIFICS (forgot_password / login) --- */
+.auth-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 85vh;
+}
+
+.auth-container {
+    background: white;
+    border-radius: 8px;
+    padding: 40px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e2e8f0;
+    max-width: 450px;
+    width: 100%;
+    box-sizing: border-box;
+    text-align: center;
+}
+
+.auth-header h2 {
+    margin: 0 0 10px 0;
+    color: #17252a;
+    font-size: 24px;
+    font-weight: 700;
+}
+
+.auth-header p {
+    color: #64748b;
+    font-size: 14px;
+    margin-bottom: 30px;
+}
+
+.alert-info {
+    background: #e0f2fe;
+    border: 1px solid #bae6fd;
+    color: #0369a1;
+}
+
+.footer-links {
+    margin-top: 25px;
+    border-top: 1px solid #e2e8f0;
+    padding-top: 15px;
+    font-size: 13px;
+}
+
+.footer-links a {
+    color: #3aafa9;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.footer-links a:hover {
+    text-decoration: underline;
+    color: #2b7a78;
+}

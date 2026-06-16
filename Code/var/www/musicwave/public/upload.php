@@ -235,27 +235,7 @@ $safe_username = htmlspecialchars($_SESSION['username'] ?? 'User', ENT_QUOTES, '
 <head>
     <title>MusicWave - Upload Media</title>
     <meta charset="UTF-8">
-    <style>
-        body { font-family: Arial, sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; }
-        .header-hud { display: flex; justify-content: space-between; align-items: center; background-color: #2b7a78; color: white; padding: 15px 30px; border-radius: 8px; margin-bottom: 20px; }
-        .header-hud h1 { margin: 0; font-size: 24px; }
-        .welcome-text { font-size: 16px; font-weight: bold; }
-        .btn { padding: 10px 20px; font-size: 15px; border: none; border-radius: 5px; cursor: pointer; text-decoration: none; font-weight: bold; }
-        .btn-logout { background-color: #e74c3c; color: white; }
-        .btn-back { background-color: #3aafa9; color: white; margin-bottom: 20px; display: inline-block; }
-        .upload-container { background-color: white; border: 2px solid #def2f1; border-radius: 8px; padding: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); max-width: 650px; margin: 0 auto; }
-        .form-group { margin-bottom: 20px; }
-        .form-group label { display: block; font-weight: bold; margin-bottom: 5px; }
-        .form-control { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-        .section-toggle { display: flex; gap: 10px; margin-bottom: 25px; background: #def2f1; padding: 10px; border-radius: 5px; }
-        .toggle-btn { flex: 1; padding: 10px; border: none; background: white; cursor: pointer; font-weight: bold; border-radius: 4px; transition: 0.2s; }
-        .toggle-btn.active { background: #2b7a78; color: white; }
-        .upload-panel { display: none; }
-        .upload-panel.active { display: block; }
-        .alert { padding: 15px; margin-bottom: 20px; border-radius: 4px; font-weight: bold; }
-        .alert-danger { background-color: #fde8e8; color: #e74c3c; border: 1px solid #f8b4b4; }
-        .alert-success { background-color: #eafaf1; color: #2ecc71; border: 1px solid #abebc6; }
-    </style>
+    <link rel="stylesheet" href="<?php echo WEB_CSS; ?>style.css">
 </head>
 <body>
 
@@ -277,13 +257,13 @@ $safe_username = htmlspecialchars($_SESSION['username'] ?? 'User', ENT_QUOTES, '
         <?php endif; ?>
 
         <div class="section-toggle">
-            <button type="button" class="toggle-btn active" onclick="switchPanel('lyrics_section', this)">Lyrics Form</button>
-            <button type="button" class="toggle-btn" onclick="switchPanel('audio_section', this)">Audio Track Form</button>
+            <button type="button" class="toggle-btn active" data-target="lyrics_section">Lyrics Form</button>
+    	    <button type="button" class="toggle-btn" data-target="audio_section">Audio Track Form</button>
         </div>
 
         <div id="lyrics_section" class="upload-panel active">
             <?php if (isset($_GET['status']) && $_GET['status'] === 'success'): ?>
-                <div style="background-color: #d4edda; color: #155724; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+                <div class="success-banner">
             	    <strong>Success!</strong> Content uploaded successfully. You can now make another upload.
         	</div>
     	    <?php endif; ?>
@@ -303,14 +283,14 @@ $safe_username = htmlspecialchars($_SESSION['username'] ?? 'User', ENT_QUOTES, '
                 <div class="form-group">
                     <label for="lyrics_content">Lyrics Text Body</label>
                     <textarea id="lyrics_content" name="content" class="form-control" rows="12" placeholder="Paste or type text lyrics here..." maxlength="<?php echo MAX_LYRICS_LENGTH; ?>" required></textarea>
-                    <small style="color:#7f8c8d;">Maximum capacity restriction: 65,535 characters.</small>
+                    <small class="help-text">Maximum capacity restriction: 65,535 characters.</small>
                 </div>
                 <div class="form-group">
                     <label>
                         <input type="checkbox" name="is_premium" value="1"> Mark as Premium Content
                     </label>
                 </div>
-                <button type="submit" class="btn" style="background-color: #2b7a78; color: white; width: 100%;">Save Lyrics</button>
+                <button type="submit" class="btn btn-submit-green">Save Lyrics</button>
             </form>
         </div>
 
@@ -331,32 +311,18 @@ $safe_username = htmlspecialchars($_SESSION['username'] ?? 'User', ENT_QUOTES, '
                     <label for="audio_file">Select Audio File</label>
                     <input type="hidden" name="MAX_FILE_SIZE" value="10485760">
                     <input type="file" id="audio_file" name="audio_file" class="form-control" accept="audio/mpeg, audio/ogg, audio/wav" required>
-                    <small style="color:#7f8c8d;">Allowed formats: MP3. Max file size configuration limit: 10MB.</small>
+                    <small class="help-text">Allowed formats: MP3. Max file size configuration limit: 10MB.</small>
                 </div>
                 <div class="form-group">
                     <label>
                         <input type="checkbox" name="is_premium" value="1"> Mark as Premium Content
                     </label>
                 </div>
-                <button type="submit" class="btn" style="background-color: #2b7a78; color: white; width: 100%;">Upload Audio Track</button>
+                <button type="submit" class="btn btn-submit-green">Upload Audio Track</button>
             </form>
         </div>
     </div>
 
-    <script>
-        function switchPanel(panelId, buttonEl) {
-            // Hide all sub-panels
-            document.querySelectorAll('.upload-panel').forEach(function(panel) {
-                panel.classList.remove('active');
-            });
-            // Deactivate all switch buttons
-            document.querySelectorAll('.toggle-btn').forEach(function(btn) {
-                btn.classList.remove('active');
-            });
-            // Activate target panel and button state
-            document.getElementById(panelId).classList.add('active');
-            buttonEl.classList.add('active');
-        }
-    </script>
+    <script src="<?php echo WEB_JS; ?>upload.js"></script>
 </body>
 </html>

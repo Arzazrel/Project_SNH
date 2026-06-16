@@ -40,35 +40,35 @@ if (empty($_SESSION['csrf_token'])) {
 ?>
 
 <div style="margin-bottom: 20px;">
-    <h3 style="margin: 0 0 5px 0; color: #17252a; font-size: 20px; font-weight: bold;">Audio Download Vault</h3>
-    <span style="color: #64748b; font-size: 14px;">Select a track from the repository below to securely download the asset to your device.</span>
+    <h3 class="section-title">Audio Download Vault</h3>
+    <span class="text-muted">Select a track from the repository below to securely download the asset to your device.</span>
 </div>
 
-<div class="audio-list-panel" style="width: 100%; max-height: 500px; overflow-y: auto; border: 1px solid #cbd5e1; border-radius: 6px; background: white; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);">
+<div class="audio-list-panel">
     <?php if ($result->num_rows === 0): ?>
-        <div style="text-align: center; padding: 60px 0; color: #64748b;">No audio tracks found in the database.</div>
+        <div style="text-align: center; padding: 60px 0;" class="text-muted">No audio tracks found in the database.</div>
     <?php else: ?>
         <?php 
         $cnt = 0;
         while ($track = $result->fetch_assoc()): 
             $cnt++;
-            $item_bg = ($cnt % 2 === 0) ? '#f8fafc' : '#ffffff';
-            $border_bottom = ($cnt === $result->num_rows) ? 'none' : '1px solid #e2e8f0';
+            $item_bg_class = ($cnt % 2 === 0) ? 'track-item-bg-alt' : 'track-item-bg-white';
+            $border_class = ($cnt === $result->num_rows) ? '' : 'track-item-border';
         ?>
-            <div class="track-item" style="display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; background-color: <?php echo $item_bg; ?>; border-bottom: <?php echo $border_bottom; ?>; transition: background 0.15s;">
-                <div style="max-width: 75%; overflow: hidden;">
-                    <span style="color: #0f172a; font-weight: 500; font-size: 15px; display: block; text-overflow: ellipsis; white-space: nowrap;">
+            <div class="track-item <?php echo $item_bg_class . ' ' . $border_class; ?>">
+                <div style="max-width: 75%;">
+                    <span class="track-title">
                         <?php echo htmlspecialchars($track['title'], ENT_QUOTES, 'UTF-8'); ?>
-                        <?php echo $track['is_premium'] ? ' <span class="badge-file-premium" style="margin-left: 5px; background: #f1c40f; color: #000; padding: 2px 5px; font-size: 10px; font-weight: bold; border-radius: 3px;">PREMIUM</span>' : ''; ?>
+                        <?php echo $track['is_premium'] ? ' <span class="badge-file-premium">PREMIUM</span>' : ''; ?>
                     </span>
-                    <span style="color: #64748b; font-size: 12px; margin-top: 3px; display: inline-block;">Author: <?php echo htmlspecialchars($track['author'], ENT_QUOTES, 'UTF-8'); ?></span>
+                    <span class="track-author">Author: <?php echo htmlspecialchars($track['author'], ENT_QUOTES, 'UTF-8'); ?></span>
                 </div>
                 <div>
                     <form method="POST" action="download.php" target="download_container" style="margin: 0;">
                         <input type="hidden" name="id" value="<?php echo (int)$track['id']; ?>">
                         <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">
                         
-                        <button type="submit" style="font-size: 13px; padding: 8px 16px; border-radius: 4px; border: none; font-weight: bold; color: white; background-color: #2b7a78; cursor: pointer; transition: background 0.2s; text-transform: uppercase; letter-spacing: 0.5px;" onmouseover="this.style.backgroundColor='#1a5251'" onmouseout="this.style.backgroundColor='#2b7a78'">
+                        <button type="submit" class="btn-download-mp3">
                             Download MP3
                         </button>
                     </form>
@@ -79,5 +79,5 @@ if (empty($_SESSION['csrf_token'])) {
 </div>
 
 <!-- iframe for download that doesn't change page but stays in the background -->
-<iframe name="download_container" style="display:none; width:0; height:0; border:none;"></iframe>
+<iframe name="download_container" class="hidden-iframe"></iframe>
 <?php $stmt->close(); ?>

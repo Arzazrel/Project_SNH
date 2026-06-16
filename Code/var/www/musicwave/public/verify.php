@@ -77,27 +77,29 @@ if (empty($token) || !preg_match('/^[a-f0-9]{64}$/i', $token)) {
 <head>
     <title>MusicWave - Email Verification</title>
     <meta charset="UTF-8">
-    <style>
-        body { font-family: Arial, sans-serif; background-color: #f4f6f9; padding: 40px; text-align: center; }
-        .message-container { background: #fff; padding: 40px; border-radius: 8px; max-width: 500px; margin: 0 auto; border: 1px solid #def2f1; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        .status-msg { font-size: 1.2em; font-weight: bold; margin-bottom: 20px; }
-        .status-success { color: #155724; }
-        .status-danger { color: #721c24; }
-        .btn-login { display: inline-block; padding: 10px 20px; background-color: #2b7a78; color: white; text-decoration: none; border-radius: 4px; font-weight: bold; }
-    </style>
-</head>
+    <link rel="stylesheet" href="css/style.css"> </head>
 <body>
-    <div class="message-container">
-        <h2>Account Activation</h2>
-        <p class="status-msg <?php echo $error ? 'status-danger' : 'status-success'; ?>">
-            <?php echo htmlspecialchars($message); ?>
-        </p>
-        
-        <?php if (!$error): ?>
-            <a href="login.php" class="btn-login">Go to Login</a>
-        <?php else: ?>
-            <a href="register.php" class="btn-login" style="background-color: #666;">Back to Registration</a>
-        <?php endif; ?>
+    <div class="margin-top-md">
+        <div class="upload-container">
+            <div class="repo-header text-center">
+                <h2 class="section-title">Account Activation</h2>
+                <p class="text-muted">Verification sequence resolution gateway.</p>
+            </div>
+
+            <?php if ($error): ?>
+                <div class="alert alert-danger text-center">
+                    <?php echo htmlspecialchars($message, ENT_QUOTES, 'UTF-8'); ?>
+                </div>
+            <?php else: ?>
+                <div class="alert alert-success text-center">
+                    <?php echo htmlspecialchars($message, ENT_QUOTES, 'UTF-8'); ?>
+                </div>
+            <?php endif; ?>
+
+            <div class="text-center margin-top-md">
+                <a href="login.php" class="btn btn-submit-green" style="display: block; text-align: center; box-sizing: border-box;">Go to Login Screen</a>
+            </div>
+        </div>
     </div>
 </body>
 </html>

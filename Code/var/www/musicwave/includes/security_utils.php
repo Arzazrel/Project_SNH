@@ -19,11 +19,16 @@ class SecurityUtils {
     * NOTE 1 - ("X-Content-Type-Options: nosniff")
     * Mitigates: MIME-sniffing vulnerabilities and cross-site scripting (XSS)
     * Forces the browser to strictly adhere to the Content-Type header sent by the server, preventing it from executing non-executable files (like text or images) as scripts
+    *
+    * NOTE 2 - ("Content-Security-Policy")
+    * Mitigates Cross-Site Scripting (XSS) and Data Injection. Enforces strict loading of scripts and styles ONLY from the same origin ('self').
     */
     public static function sendSecurityHeaders() {
     	if (!headers_sent()) {
     	    header("X-Frame-Options: DENY"); 			// SEE NOTE 0
 	    header("X-Content-Type-Options: nosniff");		// SEE NOTE 1
+            header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; audio-src 'self';");	// SEE NOTE 2
+            
 	    header("Content-Type: text/html; charset=UTF-8");
 	}
     }

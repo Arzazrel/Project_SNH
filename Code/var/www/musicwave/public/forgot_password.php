@@ -148,143 +148,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MusicWave - Password Recovery</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #eef2f3;
-            margin: 0;
-            padding: 0;
-            color: #334155;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-        }
-        .auth-container {
-            background: white;
-            border-radius: 8px;
-            padding: 40px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            border: 1px solid #e2e8f0;
-            max-width: 450px;
-            width: 100%;
-            box-sizing: border-box;
-            text-align: center;
-        }
-        .auth-header h2 {
-            margin: 0 0 10px 0;
-            color: #17252a;
-            font-size: 24px;
-            font-weight: 700;
-        }
-        .auth-header p {
-            color: #64748b;
-            font-size: 14px;
-            margin-bottom: 30px;
-        }
-        .form-group {
-            text-align: left;
-            margin-bottom: 20px;
-        }
-        .form-group label {
-            display: block;
-            font-size: 13px;
-            font-weight: 600;
-            color: #475569;
-            margin-bottom: 6px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .form-control {
-            width: 100%;
-            padding: 10px 12px;
-            font-size: 14px;
-            border: 1px solid #cbd5e1;
-            border-radius: 4px;
-            box-sizing: border-box;
-            color: #0f172a;
-            transition: border-color 0.15s;
-        }
-        .form-control:focus {
-            outline: none;
-            border-color: #3aafa9;
-        }
-        .btn-submit {
-            width: 100%;
-            background-color: #2b7a78;
-            color: white;
-            padding: 12px;
-            border: none;
-            border-radius: 4px;
-            font-weight: bold;
-            font-size: 14px;
-            text-transform: uppercase;
-            cursor: pointer;
-            transition: background-color 0.15s;
-            letter-spacing: 0.5px;
-            margin-top: 10px;
-        }
-        .btn-submit:hover {
-            background-color: #1a5351;
-        }
-        .alert {
-            padding: 12px 15px;
-            border-radius: 6px;
-            margin-bottom: 25px;
-            font-weight: 500;
-            font-size: 14px;
-            text-align: left;
-            line-height: 1.5;
-        }
-        .alert-info {
-            background: #e0f2fe;
-            border: 1px solid #bae6fd;
-            color: #0369a1;
-        }
-        .footer-links {
-            margin-top: 25px;
-            border-top: 1px solid #e2e8f0;
-            padding-top: 15px;
-            font-size: 13px;
-        }
-        .footer-links a {
-            color: #3aafa9;
-            text-decoration: none;
-            font-weight: 600;
-        }
-        .footer-links a:hover {
-            text-decoration: underline;
-            color: #2b7a78;
-        }
-    </style>
+    <link rel="stylesheet" href="<?php echo WEB_CSS; ?>style.css">
 </head>
 <body>
 
-    <div class="auth-container">
-        <div class="auth-header">
-            <h2>Recover Password</h2>
-            <p>Provide your account email safety node to receive a temporary validation sequence.</p>
-        </div>
-
-        <?php if ($message): ?>
-            <div class="alert alert-info">
-                <?php echo htmlspecialchars($message); ?>
+    <div class="auth-wrapper">
+        <div class="auth-container">
+            <div class="auth-header">
+                <h2>Recover Password</h2>
+                <p>Provide your account email safety node to receive a temporary validation sequence.</p>
             </div>
-        <?php endif; ?>
 
-        <form method="POST" action="forgot_password.php">
-            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">
-            
-            <div class="form-group">
-                <label for="email">Registered Email Address</label>
-                <input type="email" id="email" name="email" class="form-control" placeholder="e.g., name@domain.com" required>
+            <?php if ($message): ?>
+                <div class="alert alert-info">
+                    <?php echo htmlspecialchars($message, ENT_QUOTES, 'UTF-8'); ?>
+                </div>
+            <?php endif; ?>
+
+            <form method="POST" action="forgot_password.php">
+                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">
+                
+                <div class="form-group text-left">
+                    <label for="email">Registered Email Address</label>
+                    <input type="email" id="email" name="email" class="form-control" placeholder="e.g., name@domain.com" required>
+                </div>
+                
+                <button type="submit" class="btn btn-submit-green">Send Reset Link</button>
+            </form>
+
+            <div class="footer-links">
+                <a href="login.php">« Back to Login</a>
             </div>
-            
-            <button type="submit" class="btn-submit">Send Reset Link</button>
-        </form>
-
-        <div class="footer-links">
-            <a href="login.php">« Back to Login</a>
         </div>
     </div>
 
