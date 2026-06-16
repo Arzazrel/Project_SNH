@@ -135,7 +135,7 @@ $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
                     <?php echo htmlspecialchars($success_message, ENT_QUOTES, 'UTF-8'); ?>
                 </div>
                 <div class="text-center margin-top-md">
-                    <a href="login.php" class="btn btn-submit-green" style="display: block; text-align: center; box-sizing: border-box;">Return to Authenticator</a>
+                    <a href="login.php" class="btn btn-submit-green">Return to Authenticator</a>
                 </div>
             <?php endif; ?>
 
