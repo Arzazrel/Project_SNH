@@ -52,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // rate limiting control (Protection against application-level DoS attacks on the CPU and Mail Flooding)
     if (!SecurityUtils::checkRateLimit($conn, 'registration')) {
         global $securityLogger;
-        $securityLogger->warning("Registration DoS block triggered (Rate limit exceeded)", ["ip" => $_SERVER['REMOTE_ADDR']]);		// write in security log
+        $securityLogger->warning("Registration DoS block triggered (Rate limit exceeded)", ["ip" => $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN_IP']);		// write in security log
         header("HTTP/1.1 429 Too Many Requests");		// redirect ot an error page to visualize the attack for the user
         exit("Too many registration attempts. Please try again after 15 minutes.");
     }
@@ -92,7 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($stmt->get_result()->num_rows > 0) {
             $message = "Email or Username already taken.";
             $error = true;
-            $securityLogger->warning("Registration attempt with existing email", ["email" => $email, "username" => $username, "ip" => $_SERVER['REMOTE_ADDR']]);
+            $securityLogger->warning("Registration attempt with existing email", ["email" => $email, "username" => $username, "ip" => $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN_IP']);
         } else {
             // hash the password using BCRYPT (NEVER store passwords in plain text or using MD5/SHA1)
             $hashed_password = password_hash($password, PASSWORD_BCRYPT);
@@ -146,7 +146,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $mail->send();
                     
                     global $accessLogger;
-                    $accessLogger->info("New user registered and verification mail sent", ["email" => $email, "username" => $username]);	// write access logs
+                    $accessLogger->info("New user registered and verification mail sent", ["email" => $email, "username" => $username, "ip" => $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN_IP']);	// write access logs
                     $message = "Registration successful! Please check your mailbox to activate your account before attempting to log in.";
                     
                     // reset the fields to empty the graphic form in case of success
@@ -163,13 +163,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $stmt_rollback->close();
 
                     global $errorLogger;
-                    $errorLogger->error("Mailer Error. Registration rolled back.", ["error" => $mail->ErrorInfo]);
+                    $errorLogger->error("Mailer Error. Registration rolled back.", ["error" => $mail->ErrorInfo, "ip" => $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN_IP']);
                     $message = "An error occurred while sending the verification email. Registration aborted. Please try again.";
                     $error = true;
                 }
             } else {
             	global $errorLogger;
-                $errorLogger->error("Failed to insert user into DB", ["error" => $conn->error]);		// write log
+                $errorLogger->error("Failed to insert user into DB", ["error" => $conn->error, "ip" => $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN_IP']);		// write log
                 $message = "A technical error occurred.";
                 $error = true;
             }
@@ -185,84 +185,75 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>MusicWave - Register</title>
     <meta charset="UTF-8">
-    <style>
-        .form-group {
-            margin-bottom: 15px;
-        }
-        .field-layout {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-        .input-field {
-            width: 250px;
-            padding: 5px;
-        }
-        .hint-text {
-            font-size: 0.85em;
-            color: #555;
-            font-style: italic;
-        }
-        .hint-strong {
-            color: #2b7a78;
-            font-weight: bold;
-        }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MusicWave - Register</title>
+    <link rel="stylesheet" href="<?php echo defined('WEB_CSS') ? WEB_CSS : 'css/'; ?>style.css">
 </head>
 <body>
-    <h2>Create a MusicWave Account</h2>
-    
-    <?php if ($message): ?>
-        <p style="color: <?php echo $error ? 'red' : 'green'; ?>;">
-            <?php echo htmlspecialchars($message); ?>
-        </p>
-    <?php endif; ?>
 
-    <form method="POST" action="register.php" autocomplete="off">
-        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">
-        
-        <div class="form-group">
-            <label>Username (Visible to others):</label><br>
-            <div class="field-layout">
-                <input type="text" name="username" class="input-field" 
-                       value="<?php echo htmlspecialchars($display_username ?? ''); ?>" 
-                       maxlength="20" required>
-                <span class="hint-text">3 to 20 characters. Only letters, numbers, and the underscore (_) are allowed. <br><strong>No spaces or special characters.</strong></span>
+    <div class="auth-wrapper">
+        <div class="auth-container">
+            
+            <div class="auth-header">
+                <h2>Create a MusicWave Account</h2>
+                <p>Join the platform to access secure lyrics and music.</p>
             </div>
-        </div>
+            
+            <?php if ($message): ?>
+                <div class="alert <?php echo $error ? 'alert-danger' : 'alert-success'; ?>">
+                    <?php echo htmlspecialchars($message, ENT_QUOTES, 'UTF-8'); ?>
+                </div>
+            <?php endif; ?>
 
-        <div class="form-group">
-            <label>Email Address:</label><br>
-            <div class="field-layout">
-                <input type="email" name="email" class="input-field" 
-                       value="<?php echo htmlspecialchars($display_email ?? ''); ?>" 
-                       maxlength="255" required>
-                <span class="hint-text">Please enter a valid email address. It will be used to log in and recover your account. (Max 255 characters)</span>
+            <form method="POST" action="register.php" autocomplete="off">
+                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">
+                
+                <div class="form-group text-left">
+                    <label for="username">Username (Visible to others)</label>
+                    <input type="text" id="username" name="username" class="form-control" 
+                           value="<?php echo htmlspecialchars($display_username ?? ''); ?>" 
+                           maxlength="20" required>
+                    <div class="help-text margin-top-md" style="margin-top: 5px;">
+                        3 to 20 characters. Only letters, numbers, and the underscore (_) are allowed. <strong>No spaces or special characters.</strong>
+                    </div>
+                </div>
+
+                <div class="form-group text-left">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" name="email" class="form-control" 
+                           value="<?php echo htmlspecialchars($display_email ?? ''); ?>" 
+                           maxlength="255" required>
+                    <div class="help-text" style="margin-top: 5px;">
+                        Please enter a valid email address. It will be used to log in and recover your account.
+                    </div>
+                </div>
+
+                <div class="form-group text-left">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" class="form-control" maxlength="72" required>
+                    <div class="help-text" style="margin-top: 5px;">
+                        Length: <strong>8 - 72 chars</strong>. Tip: To make it robust, include at least one capital letter, one number, and one symbol (e.g., @, #, !). Avoid common words.
+                    </div>
+                </div>
+
+                <div class="form-group text-left">
+                    <label for="confirm_password">Confirm Password</label>
+                    <input type="password" id="confirm_password" name="confirm_password" class="form-control" maxlength="72" required>
+                    <div class="help-text" style="margin-top: 5px;">
+                        Please retype the password you entered above to verify that it is correct.
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-submit-green" style="margin-top: 15px;">Register</button>
+            </form>
+            
+            <div class="footer-links">
+                <a href="login.php">« Already have an account? Login here.</a>
             </div>
+            
         </div>
+    </div>
 
-        <div class="form-group">
-            <label>Password:</label><br>
-            <div class="field-layout">
-                <input type="password" name="password" class="input-field" maxlength="72" required>
-                <span class="hint-text">Length: <span class="hint-strong">8 - 72 chars</span>.<br>
-                Tip: To make it robust, include at least one capital letter, one number, and one symbol (e.g., @, #, !). Avoid common words.</span>
-            </div>
-        </div>
-
-        <div class="form-group">
-            <label>Confirm Password:</label><br>
-            <div class="field-layout">
-                <input type="password" name="confirm_password" class="input-field" maxlength="72" required>
-                <span class="hint-text">Please retype the password you entered above to verify that it is correct.</span>
-            </div>
-        </div>
-
-        <button type="submit" style="padding: 8px 15px; margin-top: 10px;">Register</button>
-    </form>
-    
-    <p><a href="login.php">Already have an account? Login here.</a></p>
 </body>
 </html>
