@@ -193,3 +193,8 @@ body { font-family: Arial, sans-serif; background-color: #f4f6f9; margin: 0; pad
     text-decoration: underline;
     color: #2b7a78;
 }
+
+.track-info-container { max-width: 75%; }
+.inline-form { margin: 0; }
+.text-warning-debug { color: #f39c12; font-family: monospace; font-weight: bold; }
+.padding-y-lg { padding: 60px 0; }
