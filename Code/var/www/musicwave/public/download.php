@@ -17,7 +17,7 @@ global $conn, $securityLogger;
 
 // session Enforcement: Verify that the user is fully authenticated
 if (!isset($_SESSION['user_id'])) {
-    $securityLogger->warning("Unauthorized download initialization attempt rejected", ["ip" => $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN_IP']);
+    $securityLogger->warning("Unauthorized download initialization attempt rejected", ["user_id" => $_SESSION['user_id'] ?? 'ANONYMOUS', "ip" => $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN_IP']);
     header("HTTP/1.1 403 Forbidden");
     exit("Security Error: Authentication required.");
 }
@@ -32,7 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 // anti-CSRF Protection: Check token existence and matching using constant-time comparison
 $user_csrf_token = $_POST['csrf_token'] ?? '';
 if (empty($user_csrf_token) || !hash_equals($_SESSION['csrf_token'] ?? '', $user_csrf_token)) {
-    $securityLogger->warning("CSRF download interception triggered", ["ip" => $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN_IP']);
+    $securityLogger->warning("CSRF download interception triggered", ["user_id" => $_SESSION['user_id'] ?? 'ANONYMOUS', "ip" => $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN_IP']);
     header("HTTP/1.1 403 Forbidden");
     exit("Security Error: Invalid or missing CSRF token validation.");
 }
@@ -49,7 +49,7 @@ if ($raw_id === '') {
 // ctype_digit() checks if all characters in the string are legal numerical digits. If it returns false, the input contains letters, spaces, or SQL injection characters (e.g., "1 OR 1=1").
 if (!ctype_digit($raw_id)) {
     // Log the exact malicious payload string inside your security context before it gets destroyed
-    $securityLogger->warning("Potential SQL Injection or parameter tampering detected in ID field", ["user_id" => $_SESSION['user_id'] ?? 'ANONYMOUS',"submitted_payload" => $raw_id,"ip" => $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN_IP']);
+    $securityLogger->warning("Potential SQL Injection or parameter tampering detected in ID field", ["user_id" => $_SESSION['user_id'] ?? 'ANONYMOUS',"submitted_payload" => $raw_id, "ip" => $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN_IP']);
     header("HTTP/1.1 400 Bad Request");
     exit("Invalid request parameter processing.");
 }
@@ -80,7 +80,7 @@ if (!$audio_asset) {
 
 // BOLA/IDOR Containment: Ensure a standard user cannot download premium assets
 if ((int)$audio_asset['is_premium'] === 1 && !$is_premium_user) {
-    $securityLogger->warning("IDOR/BOLA premium download violation intercepted", ["user_id" => $_SESSION['user_id'],"compromised_asset_id" => $file_id]);
+    $securityLogger->warning("IDOR/BOLA premium download violation intercepted", ["user_id" => $_SESSION['user_id'] ?? 'ANONYMOUS', "ip" => $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN_IP', "compromised_asset_id" => $file_id]);
     header("HTTP/1.1 403 Forbidden");
     exit("Security Error: Premium privileges are required to download this asset.");
 }
@@ -97,7 +97,7 @@ $real_path = realpath(DIR_UPLOADS_AUDIO . $isolated_filename);		// media file pa
 if ($real_path === false || strpos($real_path, $canonical_upload_dir) !== 0) {
     
     // Log a high-severity incident with contextual threat metadata for forensic auditing
-    $securityLogger->critical("Path confinement breach attempted", ["user_id"       => $_SESSION['user_id'] ?? 'ANONYMOUS', "injected_path" => $audio_asset['content']]);
+    $securityLogger->critical("Path confinement breach attempted", ["user_id" => $_SESSION['user_id'] ?? 'ANONYMOUS', "ip" => $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN_IP', "injected_path" => $audio_asset['content']]);
     
     // Terminate execution and drop the connection with a generic secure error matrix
     header("HTTP/1.1 403 Forbidden");
@@ -108,7 +108,7 @@ $absolute_storage_path = $real_path;		// safe trasmission: send the path in the 
 
 // physical check on disk before launching download pipe stream
 if (!file_exists($absolute_storage_path)) {
-    $securityLogger->critical("Database mapping error: File registered but missing from storage disk", ["file_path" => $absolute_storage_path]);
+    $securityLogger->critical("Database mapping error: File registered but missing from storage disk", ["file_path" => $absolute_storage_path, "user_id" => $_SESSION['user_id'] ?? 'ANONYMOUS', "ip" => $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN_IP']);
     header("HTTP/1.1 404 Not Found");
     exit("The target binary asset could not be located on disk.");
 }
