@@ -37,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // check presence and validity of the token. Use of hash_equals to prevent timing attack during string comparision (apply Costant-Time Comparison)
     if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
         global $securityLogger;
-    	$securityLogger->warning("Admin CSRF attempt blocked on privilege modification", ["admin_id" => $_SESSION['user_id'], "ip" => $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN_IP']);		// write in security log
+    	$securityLogger->warning("Admin CSRF attempt blocked on privilege modification", ["admin_id" => $_SESSION['user_id'] ?? 'ANONYMOUS', "ip" => $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN_IP']);		// write in security log
     	header("HTTP/1.1 403 Forbidden");			// redirect ot an error page to visualize the attack for the user
     	exit("Security Error: Invalid or missing CSRF Token.");
     }
@@ -63,17 +63,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->execute();
             
             // update check
-            if ($stmt->affected_rows > 0) {							// update success
+            if ($stmt->affected_rows > 0) {		
+                global $accessLogger;					// update success
                 $success_message = "User privilege updated successfully.";        
                 // Detailed action logging. An action that modifies privileges must be tracked at all times, not only for post-incident investigation purposes.
-                $accessLogger->info("Administrator changed user privilege status", ["admin_id" => $_SESSION['user_id'] ,"target_user_id" => $target_user_id, "new_privilege" => $new_role, "ip" => $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN_IP']);
+                $accessLogger->info("Administrator changed user privilege status", ["admin_id" => $_SESSION['user_id'] ?? 'ANONYMOUS',"target_user_id" => $target_user_id, "new_privilege" => $new_role, "ip" => $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN_IP']);
             } else {
                 $error_message = "Failed to update privileges. User might not exist or is an admin.";		// update failed
             }
             
             $stmt->close();
         } catch (Throwable $e) {
-            $securityLogger->error("Database error during role modification", ["error" => $e->getMessage()]);
+            global $errorLogger;
+            $errorLogger->error("Database error during role modification", ["error" => $e->getMessage(), "admin_id" => $_SESSION['user_id'] ?? 'ANONYMOUS', "ip" => $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN_IP']);
             $error_message = "An internal database error occurred while committing state changes.";
         }
     }
@@ -113,7 +115,8 @@ try {
     $fetch_stmt->execute();
     $users_list = $fetch_stmt->get_result();
 } catch (Throwable $e) {
-    $securityLogger->error("Database error loading user list in admin dashboard", ["error" => $e->getMessage()]);
+    global $errorLogger;
+    $errorLogger->error("Database error loading user list in admin dashboard", ["error" => $e->getMessage(), "admin_id" => $_SESSION['user_id'] ?? 'ANONYMOUS', "ip" => $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN_IP']);
     die("An error occurred while loading dashboard contents. Please try again later.");
 }
 ?>
@@ -192,7 +195,7 @@ try {
                             </td>
                             <td><span class="lyrics-table-date"><?php echo htmlspecialchars($user['created_at'], ENT_QUOTES, 'UTF-8'); ?></span></td>
                             <td class="text-center">
-                                <form method="POST" action="admin_dashboard.php" style="margin: 0;">
+                                <form method="POST" action="admin_dashboard.php">
                                     <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">
                                     <input type="hidden" name="target_user_id" value="<?php echo htmlspecialchars($user['id'], ENT_QUOTES, 'UTF-8'); ?>">
                                     
