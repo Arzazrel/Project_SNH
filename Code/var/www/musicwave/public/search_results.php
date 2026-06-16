@@ -33,7 +33,7 @@ if ($search_context === 'search') {
 
 // If the query is empty, we abort immediately without stressing the database
 if (empty($search_query)) {
-    echo "<p style='color: #7f8c8d; text-align: center;'>Please enter a valid keyword to start searching.</p>";
+    echo "<p>Please enter a valid keyword to start searching.</p>";
     return;
 }
 
@@ -77,8 +77,9 @@ try {
 
 } catch (Exception $e) {
     // Log the error internally, show a generic message to the user
-    $securityLogger->error("Database error inside search submodule", ["error" => $e->getMessage()]);
-    echo "<p style='color: red;'>An internal database error occurred during the search.</p>";
+    global $errorLogger;
+    $errorLogger->error("Database error inside search submodule", ["error" => $e->getMessage(), "user_id" => $_SESSION['user_id'] ?? 'ANONYMOUS', "ip" => $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN_IP']);
+    echo "<p class='text-danger'>An internal database error occurred during the search.</p>";
     return;
 }
 ?>
