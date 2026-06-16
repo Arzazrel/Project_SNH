@@ -15,7 +15,7 @@ global $conn, $securityLogger;
 
 // Verifica se la connessione esiste
 if (!isset($conn) || $conn === null) {
-    die("<p style='color:orange; font-family:monospace;'>[DEBUG] Errore: \$conn è NULL nel modulo lyrics!</p>");
+    die("<p class='text-danger'>[DEBUG] Errore: \$conn è NULL nel modulo lyrics!</p>");
 }
 
 // Extract premium permissions from the session set in the parent controller
@@ -43,7 +43,7 @@ if ($action === 'view' && $lyric_id > 0) {
         $view_stmt->close();
         
         if (!$lyric_data) {
-            echo "<p style='color: red; font-weight: bold;'>Content not found or access denied.</p>";
+            echo "<p class='text-warning-debug'>Content not found or access denied.</p>";
             echo '<p><a href="dashboard.php?view=lyrics" class="page-link">&laquo; Back to List</a></p>';
             return;
         }
@@ -70,8 +70,9 @@ if ($action === 'view' && $lyric_id > 0) {
         <?php
         // -- restart this part of php and end html code --
     } catch (Throwable $e) {
-        $securityLogger->error("Error rendering lyric single view", ["error" => $e->getMessage()]);
-        echo "<p style='color: red;'>An error occurred while opening the lyric.</p>";
+        global $errorLogger;
+        $errorLogger->error("Error rendering lyric single view", ["error" => $e->getMessage(), "user_id" => $_SESSION['user_id'] ?? 'ANONYMOUS', "ip" => $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN_IP']);
+        echo "<p class='text-danger'>An error occurred while opening the lyric.</p>";
     }
     return; 	// stop execution here to not show the table below
 }
@@ -122,8 +123,9 @@ try {
     
 } catch (Throwable $e) {
     // Log internal error without leaking system details to the end user
-    $securityLogger->error("Database error inside lyrics submodule", ["error" => $e->getMessage()]);		# write log
-    echo "<p style='color: red;'>An error occurred while loading contents. Please try again later.</p>";	# error mex
+    global $errorLogger;
+    $errorLogger->error("Database error inside lyrics submodule", ["error" => $e->getMessage(), "user_id" => $_SESSION['user_id'] ?? 'ANONYMOUS', "ip" => $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN_IP']);	# write log	
+    echo "<p class='text-danger'>An error occurred while loading contents. Please try again later.</p>";	# error mex
     return;
 }
 ?>
