@@ -30,50 +30,55 @@ Upon cloning the repository, the vendor/ folder (PHP third-party dependencies) a
 will not be present as they are ignored by .gitignore. They will be generated automatically during the installation and initialization phase 
 described in the next sections.
 
-/var/www/musicwave/                 <-- Project Root
-├── .gitignore                      <-- Excludes sensitive data, logs, and heavy dependencies
-├── README.md                       <-- This documentation file
-├── config/                         
-│   └── db_config.php               <-- Configuration file containing paths and DB credentials
-├── database/                       
-│   └── schema.sql                  <-- SQL script for database initialization and seed data
-├── includes/                       <-- Core backend logic (reusable functions)
-│   ├── db_connect.php              <-- Persistent database connection manager
-│   ├── logger_setup.php            <-- Application logging subsystem configuration
-│   └── security_utils.php          <-- Input sanitization and session validation utilities
-├── public/                         <-- WEB ROOT (The only directory exposed to Apache)
-│   ├── login.php                   <-- Public authentication endpoint
-│   ├── index.php					<-- Default public entry point of the application (Landing Page)
-│   ├── register.php				<-- Public registration endpoint
-│   ├── verify.php					<-- Critical endpoint for completing the signup flow. Converts the account status from 'pending' to 'active'.
-│   ├── forgot_password.php			<-- Remote procedure initialization module for recovering lost access credentials.
-│   ├── reset_password.php 			<-- Module to register the new password
-│   ├── dashboard.php				<-- Central container and orchestrator of the authenticated user interface.
-│   ├── lyrics_panel.php			<-- Integrated submodule for the consultation, paging, and protected viewing of the music lyrics stored in the system.
-│   ├── audio_panel.php				<-- Submodule responsible for indexing and initializing the multimedia playback stream of audio files on the server.
-│   ├── search_results.php			<-- Integrated search engine delegated to partial alphanumeric matches in the title and author columns of multimedia metadata.
-│   ├── upload.php					<-- Specialized controller dedicated to managing and securely loading content (lyrics or MP3 tracks) into the application.
-│   ├── download.php				<-- Secure download gateway for MP3 resources stored on the local filesystem.
-│   ├── admin_dashboard.php			<-- Administrative interface for controlling user roles
-│   └── logout.php					<-- User session closure and de-authentication controller 
+Project_SNH 						<-- Project Root
+├── Code 
+│   │── /var/www/musicwave/ 
+│	│	├── config/                         
+│   │	│	└── db_config.php               <-- Configuration file containing paths and DB credentials
+│	│	├── database/                       
+│   │	│	└── schema.sql                  <-- SQL script for database initialization and seed data
+│	│	├── includes/                       <-- Core backend logic (reusable functions)
+│   │	│	├── db_connect.php              <-- Persistent database connection manager
+│   │	│	├── logger_setup.php            <-- Application logging subsystem configuration
+│   │	│	└── security_utils.php          <-- Input sanitization and session validation utilities
+│	│	├── public/                         <-- WEB ROOT (The only directory exposed to Apache)
+│   │	│	├── login.php                   <-- Public authentication endpoint
+│   │	│	├── index.php					<-- Default public entry point of the application (Landing Page)
+│   │	│	├── register.php				<-- Public registration endpoint
+│   │	│	├── verify.php					<-- Critical endpoint for completing the signup flow. Converts the account status from 'pending' to 'active'.
+│   │	│	├── forgot_password.php			<-- Remote procedure initialization module for recovering lost access credentials.
+│   │	│	├── reset_password.php 			<-- Module to register the new password
+│   │	│	├── dashboard.php				<-- Central container and orchestrator of the authenticated user interface.
+│   │	│	├── lyrics_panel.php			<-- Integrated submodule for the consultation, paging, and protected viewing of the music lyrics stored in the system.
+│   │	│	├── audio_panel.php				<-- Submodule responsible for indexing and initializing the multimedia playback stream of audio files on the server.
+│   │	│	├── search_results.php			<-- Integrated search engine delegated to partial alphanumeric matches in the title and author columns of multimedia metadata.
+│   │	│	├── upload.php					<-- Specialized controller dedicated to managing and securely loading content (lyrics or MP3 tracks) into the application.
+│  	│ 	│	├── download.php				<-- Secure download gateway for MP3 resources stored on the local filesystem.
+│   │	│	├── admin_dashboard.php			<-- Administrative interface for controlling user roles
+│   │	│	└── logout.php					<-- User session closure and de-authentication controller 
+│	│	│
+│	│	└── [GENERATED] vendor/             <-- Autogenerated via Composer (Monolog, PHPMailer)
+│	│
+│	│── /var/www/musicwave_logs
+│	│	│── security.log					<-- File dedicated to recording identified anomalies and attack patterns.
+│	│	│── access.log             			<-- Log of the application's operational activity and ordinary lifecycle.
+│	│	└── system_errors.log				<-- Centralized repository of internal structural errors related to the platform and infrastructure.
+│	│
+│	│──
+│	│
+│	└──
 │
-│── [GENERATED] vendor/             <-- Autogenerated via Composer (Monolog, PHPMailer)
-└── [GENERATED] Documentation/logs/ <-- Autogenerated at runtime for security/system logs
-
-/var/www/musicwave_logs
-│── security.log					<-- File dedicated to recording identified anomalies and attack patterns.
-│── access.log             			<-- Log of the application's operational activity and ordinary lifecycle.
-└── system_errors.log				<-- Centralized repository of internal structural errors related to the platform and infrastructure.
-
-
 ├── Documentation/                  <-- Project documentation for the exam
-    ├── 2025 web-project-specs      <-- project specifications for the exam 
-    ├── DB_structure                <-- DB structure 
-	├── Test_email_credentials		<-- file containing the credentials for a testing email
-	├── use_cases_requirements		<-- use cases pdf
-	├── User_Manual					<-- app view
-    └── vulnerability_testing		<-- file containing the attack tests performed and the countermeasures adopted in the code for each page of the app
-
+│   ├── 2025 web-project-specs      <-- project specifications for the exam 
+│   ├── DB_structure                <-- DB structure 
+│	├── Test_email_credentials		<-- file containing the credentials for a testing email
+│	├── use_cases_requirements		<-- use cases pdf
+│	├── User_Manual					<-- app view
+│   └── vulnerability_testing		<-- file containing the attack tests performed and the countermeasures adopted in the code for each page of the app
+│
+└── Test_files
+	├─ 					<-- 
+    └──
 
 ## ** Initialization & Dependency Setup **
 
