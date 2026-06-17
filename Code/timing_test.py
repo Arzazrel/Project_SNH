@@ -3,7 +3,7 @@ import time
 import statistics
 
 # --- CONFIGURATION ---
-LOGIN_URL = "http://localhost/login.php" 		# Update with your actual local URL
+LOGIN_URL = "http://localhost/login.php" 		        # Update with your actual local URL
 VALID_EMAIL = "user@musicwave.it"                       # An email already registered in your DB
 INVALID_EMAIL = "nonexistent_user_999@fake.com"         # A completely random/fake email
 DUMMY_PASSWORD = "WrongPassword123!"                    # We use a wrong password to test the failure path
