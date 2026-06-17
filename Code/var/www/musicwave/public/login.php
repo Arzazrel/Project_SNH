@@ -27,8 +27,15 @@ if (empty($_SESSION['csrf_token'])) {
 }
 
 $error_message = "";		// var contanining the text for the error mex
-// Decoy constant: a valid but generic BCRYPT hash (matches the string 'dummy') used to waste CPU time when the real user is not present or is blocked
-$dummy_hash = '$2y$10$abcdefghijklmnopqrstuvwx23456789012345678901234567890';
+
+// dynamically detects the best algorithm supported by the server (argon2d or BCRYP). For compatibility purpouse BCRYPT is default version.
+$best_algo = defined('PASSWORD_ARGON2ID') ? PASSWORD_ARGON2ID : PASSWORD_BCRYPT;
+// decoy constant: a valid but generic BCRYPT hash (matches the string 'dummy') used to waste CPU time when the real user is not present or is blocked
+$dummy_bcrypt = '$2y$10$abcdefghijklmnopqrstuvwx23456789012345678901234567890';
+$dummy_argon2id = '$argon2id$v=19$m=65536,t=4,p=1$bXpScWJpY0oxR0YwTkE$bXpScWJpY0oxR0YwTkFtelJxYmljSDFHMTBOQW16UnE';
+
+// dynamically selects the dummy hash based on what the server uses as default
+$dummy_hash = ($best_algo === PASSWORD_ARGON2ID) ? $dummy_argon2id : $dummy_bcrypt;
 
 // Handle the POST request
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -46,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // rate limiting control (Protection against application-level DoS attacks on the CPU and Mail Flooding)
     if (!SecurityUtils::checkRateLimit($conn, 'login')) {
         global $securityLogger;
-        $securityLogger->warning("Login DoS block triggered (Rate limit exceeded for IP)", ["ip" => $_SERVER['REMOTE_ADDR']]);
+        $securityLogger->warning("Login DoS block triggered (Rate limit exceeded for IP)", ["ip" => $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN_IP']);
         header("HTTP/1.1 429 Too Many Requests");							// redirect ot an error page to visualize the attack for the user
         exit("Too many login attempts from this connection. Please try again after 15 minutes.");
     }
@@ -58,7 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // check the result of the email validation
     if (!$email) {
-        $securityLogger->warning("Login attempt with invalid email format", ["input" => $email_raw, "ip" => $_SERVER['REMOTE_ADDR']]);	// set log
+        $securityLogger->warning("Login attempt with invalid email format", ["input" => $email_raw, "ip" => $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN_IP']);	// set log
         $error_message = "Invalid credentials or account locked.";						// set error_mex
     } else {
         
@@ -78,7 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             // check for Account Lockout
             if ($lock_until && $lock_until > $now) {	// - start - if 0.1 - [account locked]
-                $securityLogger->warning("Login attempt on locked account", ["email" => $email, "ip" => $_SERVER['REMOTE_ADDR']]);	// write log
+                $securityLogger->warning("Login attempt on locked account", ["email" => $email, "ip" => $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN_IP']);	// write log
                 $error_message = "Account temporarily locked. Please try again later.";			// set error_mex
                 
             	password_verify($password_raw, $dummy_hash);	// ANTI-TIMING PROTECTION: run a dummy BCRYPT to simulate password checking time
@@ -90,7 +97,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     
                     // check pending status (Registered user but not activated via email)
                     if ($user['status'] === 'pending') {
-                        $securityLogger->warning("Login blocked: Account registration is pending activation", ["email" => $email, "user_id" => $user['id']]);
+                        $securityLogger->warning("Login blocked: Account registration is pending activation", ["email" => $email, "user_id" => $user['id'], "ip" => $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN_IP']);
                         $error_message = "Your account is not verified yet. Please check your inbox and click the activation link.";
                         
                         password_verify($password_raw, $dummy_hash); // ANTI-TIMING: eseguiamo comunque per simulare lo stesso tempo di elaborazione
@@ -100,9 +107,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 		    	
 		    	SecurityUtils::rotateSessionId();			// rotate session ID to mitigate session fixation
 		            
-		        // Reset attempts and set session
-		        $reset_stmt = $conn->prepare("UPDATE users SET login_attempts = 0, lock_until = NULL WHERE id = ?");	// prepared query for update 
-		        $reset_stmt->bind_param("i", $user['id']);
+		        // dynamic rehash
+		        if (password_needs_rehash($user['password_hash'], $best_algo)) {
+                            
+                            $new_hash = password_hash($password_raw, $best_algo);	// generate the new updated hash
+                            
+                            // reset the attempts AND update the hash in one go
+                            $reset_stmt = $conn->prepare("UPDATE users SET login_attempts = 0, lock_until = NULL, password_hash = ? WHERE id = ?");
+                            $reset_stmt->bind_param("si", $new_hash, $user['id']);
+                            
+                            $securityLogger->info("User password hash successfully upgraded to current server standard", ["user_id" => $user['id']]);
+                        } else {
+                            // don't change hash alg.
+                            $reset_stmt = $conn->prepare("UPDATE users SET login_attempts = 0, lock_until = NULL WHERE id = ?");
+                            $reset_stmt->bind_param("i", $user['id']);
+                        }
+		        
+		        // reset attempts and set session
 		        $reset_stmt->execute();
 		        $reset_stmt->close();
 
@@ -114,11 +135,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 		           
 		        // role-basedrouting control
 		        if ($_SESSION['role'] === 'admin') {
-			    $securityLogger->info("Admin user logged in, redirecting to admin dashboard", ["user_id" => $user['id'], "email" => $email]);		// write log
+			    $securityLogger->info("Admin user logged in, redirecting to admin dashboard", ["user_id" => $user['id'], "email" => $email, "ip" => $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN_IP']);		// write log
 			    header("Location: admin_dashboard.php");
 			    exit();
 			} else {
-			    $securityLogger->info("Standard/Premium user logged in, redirecting to user dashboard", ["user_id" => $user['id'], "email" => $email]);	// write log
+			    $securityLogger->info("Standard/Premium user logged in, redirecting to user dashboard", ["user_id" => $user['id'], "email" => $email, "ip" => $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN_IP']);	// write log
 			    header("Location: dashboard.php");
 			    exit();
 			}
@@ -136,13 +157,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $new_attempts = $user['login_attempts'] + 1;						 		// update the number of the attempt (manage server side)
                     $new_lock = null;
 
-		    $securityLogger->warning("Failed login attempt", ["email" => $email, "attempt_no" => $new_attempts, "ip" => $_SERVER['REMOTE_ADDR']]);	// write log
+		    $securityLogger->warning("Failed login attempt", ["email" => $email, "attempt_no" => $new_attempts, "ip" => $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN_IP']);	// write log
                     $error_message = "Invalid credentials or account locked.";							// set error mex
 
 		    // check if has reached the maximum number of attempts.
                     if ($new_attempts >= MAX_LOGIN_ATTEMPTS) {
                         $new_lock = (new DateTime())->modify('+' . LOCKOUT_TIME_MINUTES . ' minutes')->format('Y-m-d H:i:s');	// set new lockout time
-                        $securityLogger->critical("Account locked: too many failed attempts", ["username" => $email, "ip" => $_SERVER['REMOTE_ADDR']]); 		// write log
+                        $securityLogger->critical("Account locked: too many failed attempts", ["username" => $email, "ip" => $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN_IP']); 		// write log
                     }
 
                     $update_stmt = $conn->prepare("UPDATE users SET login_attempts = ?, lock_until = ? WHERE id = ?");		// prepared query for update lock for the user
@@ -154,7 +175,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // - end - if 0 - [user found]
         } else {	// - start - else 0 - [user not found]
             // User not found: log it but show generic error to prevent User Enumeration
-            $securityLogger->warning("Login attempt for non-existent user", ["email" => $email, "ip" => $_SERVER['REMOTE_ADDR']]);		// write log
+            $securityLogger->warning("Login attempt for non-existent user", ["email" => $email, "ip" => $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN_IP']);		// write log
             $error_message = "Invalid credentials or account locked.";						// set error mex
             
             password_verify($password_raw, $dummy_hash);	// ANTI-TIMING PROTECTION: run a dummy BCRYPT to simulate password checking time
@@ -166,35 +187,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>MusicWave - Login</title>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MusicWave - Login</title>
+    <link rel="stylesheet" href="<?php echo defined('WEB_CSS') ? WEB_CSS : 'css/'; ?>style.css">
 </head>
 <body>
-    <h2>Login to MusicWave</h2>
-    
-    <?php if ($error_message): ?>
-        <p style="color: red;"><?php echo htmlspecialchars($error_message); ?></p>
-    <?php endif; ?>
 
-    <form method="POST" action="login.php">
-        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">
-        
-        <div>
-            <label>Email:</label><br>
-            <input type="email" name="email" required>
+    <div class="auth-wrapper">
+        <div class="auth-container">
+            
+            <div class="auth-header">
+                <h2>Login to MusicWave</h2>
+                <p>Welcome back! Please enter your credentials to access your dashboard.</p>
+            </div>
+            
+            <?php if ($error_message): ?>
+                <div class="alert alert-danger">
+                    <?php echo htmlspecialchars($error_message); ?>
+                </div>
+            <?php endif; ?>
+
+            <form method="POST" action="login.php">
+                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">
+                
+                <div class="form-group text-left">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" name="email" class="form-control" required>
+                </div>
+                
+                <div class="form-group text-left">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" class="form-control" required>
+                </div>
+                
+                <button type="submit" class="btn btn-submit-green" style="margin-top: 15px;">Login</button>
+            </form>
+            
+            <div class="footer-links">
+                <p><a href="forgot_password.php">Forgot your password? Click here to recover it.</a></p>
+                <p style="margin-top: 10px;"><a href="register.php">« Don't have an account? Register here.</a></p>
+            </div>
+            
         </div>
-        <br>
-        <div>
-            <label>Password:</label><br>
-            <input type="password" name="password" required>
-        </div>
-        <br>
-        <button type="submit">Login</button>
-    </form>
-    
-    <br>
-    <p>
-        <a href="forgot_password.php">Forgot your password? Click here to recover it.</a>
-    </p>
+    </div>
+
 </body>
 </html>
