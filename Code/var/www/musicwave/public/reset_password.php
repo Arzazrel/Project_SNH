@@ -28,6 +28,9 @@ if (!SecurityUtils::checkRateLimit($conn, 'validate')) {
     exit("Too many verification reset password attempts. Please try again after 15 minutes.");
 }
 
+// dynamically detects the best algorithm supported by the server (argon2d or BCRYP). For compatibility purpouse BCRYPT is default version.
+$best_algo = defined('PASSWORD_ARGON2ID') ? PASSWORD_ARGON2ID : PASSWORD_BCRYPT;
+
 $error_message = "";
 $success_message = "";
 $is_token_valid = false;
@@ -88,7 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $is_token_valid) {
         $error_message = "Passwords do not match.";
     } else {
         // Generating the new secure hash using BCRYPT
-        $new_password_hash = password_hash($password_new, PASSWORD_BCRYPT);
+        $new_password_hash = password_hash($password_new, $best_algo);
 
         // DB Update: Set the new password and RESET the token fields to destroy it (One-Time Use)
         $update_stmt = $conn->prepare("UPDATE users SET password_hash = ?, token_reset_hash = NULL, reset_expires_at = NULL, login_attempts = 0, lock_until = NULL WHERE id = ?");
