@@ -29,9 +29,13 @@ if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
 
+// dynamically detects the best algorithm supported by the server (argon2d or BCRYP). For compatibility purpouse BCRYPT is default version.
+$best_algo = defined('PASSWORD_ARGON2ID') ? PASSWORD_ARGON2ID : PASSWORD_BCRYPT;
+
 // vars initializations
 $message = "";
 $error = false;
+$success_generic_message = "Please check your mailbox to activate your account before attempting to log in.";
 
 // initialize empty variables in case of GET request (to prevent display errors)
 $display_username = "";
@@ -89,13 +93,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->bind_param("ss", $email, $username);
         $stmt->execute();				
         // check if already exist the user
-        if ($stmt->get_result()->num_rows > 0) {
-            $message = "Email or Username already taken.";
-            $error = true;
+        if ($stmt->get_result()->num_rows > 0) {	// email already used in th app
             $securityLogger->warning("Registration attempt with existing email", ["email" => $email, "username" => $username, "ip" => $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN_IP']);
-        } else {
+            // not show error messages to prevent user enumeration - send notification mail
+            $mail = new PHPMailer(true);
+            try {
+            	$mail->isSMTP();
+                $mail->Host       = SMTP_HOST;
+                $mail->SMTPAuth   = true;
+                $mail->Username   = SMTP_USER;
+                $mail->Password   = SMTP_PASS;
+                $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+                $mail->Port       = SMTP_PORT;
+
+                $mail->setFrom(SMTP_USER, MAIL_FROM_NAME);
+                $mail->addAddress($email, $username);
+
+                $mail->isHTML(true);
+                $mail->Subject = 'Security Notice: Registration Attempt on MusicWave';
+                    
+                $mail->Body    = "<h1>Hello " . htmlspecialchars($username, ENT_QUOTES, 'UTF-8') . ",</h1>
+                                  <p>Someone recently attempted to create a new account on MusicWave using your email address.</p>
+                                  <p>Since you already have an active profile with us, <strong>this registration attempt was safely intercepted and blocked</strong>.</p>
+                                  <p>If this was you, you can safely ignore this message and log in using your existing credentials. If you forgot your password, please use our password recovery system.</p>
+                                  <p>If you did not make this request, no action is required. Your account remains completely secure and no modifications have been made.</p>";
+                    
+                $mail->AltBody = "Hello " . htmlspecialchars($username, ENT_QUOTES, 'UTF-8') . ",\n\nSomeone recently attempted to create a new account on MusicWave using your email address. Since you already have an active profile, this attempt was blocked. If this was you, you can log in normally. If not, you can safely ignore this email. Your account remains secure.";
+
+                $mail->send();
+            } catch (Exception $e) {
+                global $errorLogger;
+                    $errorLogger->error("Mailer Error. Registration rolled back.", ["error" => $mail->ErrorInfo, "ip" => $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN_IP']);	// write log
+                    $message = "An error occurred while sending the verification email. Registration aborted. Please try again.";
+                    $error = true;
+            }
+
+            // mask the outcome by displaying the exact same success message
+            $message = $success_generic_message;
+            $display_username = "";
+            $display_email = "";
+            SecurityUtils::rotateSessionId();
+            
+        } else {					// email is ok, not already used
             // hash the password using BCRYPT (NEVER store passwords in plain text or using MD5/SHA1)
-            $hashed_password = password_hash($password, PASSWORD_BCRYPT);
+            $hashed_password = password_hash($password, $best_algo);
             
             // Generation of the one-time activation secret code (Activation Token)
             $activation_token = bin2hex(random_bytes(32));
@@ -163,7 +204,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $stmt_rollback->close();
 
                     global $errorLogger;
-                    $errorLogger->error("Mailer Error. Registration rolled back.", ["error" => $mail->ErrorInfo, "ip" => $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN_IP']);
+                    $errorLogger->error("Mailer Error. Registration rolled back.", ["error" => $mail->ErrorInfo, "ip" => $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN_IP']);	// write log
                     $message = "An error occurred while sending the verification email. Registration aborted. Please try again.";
                     $error = true;
                 }
