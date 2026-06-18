@@ -230,9 +230,62 @@ To ensure that the automated background maintenance tasks resume automatically w
 ## utilities ##
 
 To search the apache2 errors see the log files
- ```bash
+```bash
 sudo tail -n 20 /var/log/apache2/error.log
 ```
+
+## Production Security Configuration (PHP & Apache2)
+
+To secure this application in a production environment, you must configure the server's master `php.ini` file. 
+This prevents critical vulnerabilities like **Error-Based SQL Injection** and **Information Disclosure** by hiding detailed system errors from public view while keeping them safely logged for development.
+
+### Why is this configuration critical?
+
+1. **Prevents Error-Based SQL Injection:** If a database query fails due to unexpected input, default configurations might print raw SQL exceptions to the browser. Attackers use these detailed errors to map database schemas, table names, and extract sensitive data.
+2. **Mitigates Information Disclosure:** Displaying compile or syntax errors reveals internal server directory structures (e.g., `/var/www/html/...`) and system modules, giving malicious actors valuable intel to target your infrastructure.
+3. **Maintains System Observability:** By enabling secure background logging, developers can still diagnose app crashes completely in the dark without affecting the live user experience.
+
+### Step-by-Step Configuration Guide
+
+1. Locate your `php.ini` file for Apache2
+Apache2 uses a specific configuration directory that is separate from the command-line (CLI) environment.
+
+* **On Linux (Ubuntu/Debian):** The file is typically located at:
+  `/etc/php/[YOUR_PHP_VERSION]/apache2/php.ini`
+  *(e.g., `/etc/php/8.2/apache2/php.ini`)*
+  To verify the correct path open the bash and enter:
+  ```bash
+  php --ini
+  ```
+  The Loaded Configuration File line shows you the exact path to the file your machine is reading.
+
+2. Update the Security Directives
+Open the `php.ini` file with an editor (use `sudo nano` on Linux) and modify or add the following lines. 
+Ensure there is **no semicolon (`;`)** at the beginning of these lines, as it comments them out.
+
+```ini
+# Disable public error display during runtime execution
+display_errors = Off
+
+# Disable public error display during PHP's startup phase
+display_startup_errors = Off
+
+# Enable background error logging
+log_errors = On
+
+# Optional: Define a specific path for logs (or leave it to Apache's default)
+# Ensure this destination file is NOT web-accessible (keep it outside public_html)
+# error_log = /var/log/apache2/musicwave_errors.log
+```
+
+3. Restart Apache2 to apply changes
+
+PHP reads the php.ini file only once when the web server daemon initializes. You must restart Apache2 for these changes to take effect:
+Bash
+```bash
+sudo systemctl restart apache2
+```
+(On older systems, use: sudo service apache2 restart)
 
 ## Upgrading Password Hashing to Argon2id (Optional)
 
