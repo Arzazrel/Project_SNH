@@ -29,7 +29,7 @@ Note on Missing Directories:
 Upon cloning the repository, the vendor/ folder (PHP third-party dependencies) and the Documentation/logs/ folder (local application runtime logs) 
 will not be present as they are ignored by .gitignore. They will be generated automatically during the installation and initialization phase 
 described in the next sections.
-
+```
 Project_SNH 						<-- Project Root
 ├── Code 
 │   │── /var/www/musicwave/ 
@@ -86,6 +86,7 @@ Project_SNH 						<-- Project Root
 │   └── vulnerability_testing		<-- file containing the attack tests performed and the countermeasures adopted in the code for each page of the app
 │
 └── Test_files						<-- folder containing images of tests done on the app and files (media) to test the app
+```
 
 ## ** Initialization & Dependency Setup **
 
